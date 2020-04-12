@@ -35,6 +35,9 @@ int AoutFile::writeFile(FILE *fptr)
 	// write the data segment
 	fwrite(data_segment.data(), data_segment.size(), 1, fptr);
 
+	// write the text relocations
+	// write the data relocations
+
 	// write the symbol table
 	// write the string table
 
@@ -69,6 +72,11 @@ int AoutFile::readFile(FILE *fptr)
 	return 0;
 }
 
+void AoutFile::addBSS(size_t size)
+{
+	file_header.a_bss += size;
+}
+
 void AoutFile::addText(uint8_t item)
 {
 	text_segment.push_back(item);
@@ -85,6 +93,16 @@ void AoutFile::addSymbol()
 }
 
 void AoutFile::addString()
+{
+
+}
+
+void AoutFile::addTextRelocation(RelocationEntry &r)
+{
+
+}
+
+void AoutFile::addDataRelocation(RelocationEntry &r)
 {
 
 }

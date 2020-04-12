@@ -47,6 +47,8 @@ void testGen()
 {
 	AoutFile a;
 
+	a.addBSS(256);
+
 	// generate text
 	for (int i = 0; i < 256; i++)
 	{

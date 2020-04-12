@@ -18,6 +18,8 @@ struct AOUT_HEADER
 	int a_drsize;	// data relocation size
 };
 
+static_assert(sizeof(AOUT_HEADER) == 32, "Invalid a.out header size!");
+
 struct RelocationEntry
 {
 	int address;	// offset within the segment (data or text) of the relocation item
@@ -31,6 +33,8 @@ struct RelocationEntry
 					//r_relative : 1,
 					//r_copy : 1;
 };
+
+static_assert(sizeof(RelocationEntry) == 8, "Invalid relocation entry!");
 
 class ObjectFile
 {
@@ -49,6 +53,10 @@ protected:
 	Segment text_segment;
 	Segment data_segment;
 
+	using Relocations = std::vector<RelocationEntry>;
+	Relocations textRelocs;
+	Relocations dataRelocs;
+
 	//std::map<> symbol_table;
 
 public:
@@ -58,11 +66,18 @@ public:
 	int writeFile(FILE *fptr);
 	int readFile(FILE *fptr);
 
+	void addBSS(size_t size);
+
 	void addText(uint8_t item);
 	void addData(uint8_t item);
 	void addSymbol();
 	void addString();
 
+	// relocations
+	void addTextRelocation(RelocationEntry&);
+	void addDataRelocation(RelocationEntry&);
+
+	// debug output
 	void dumpHeader(FILE*);
 	void dumpText(FILE*);
 	void dumpData(FILE*);

@@ -47,23 +47,40 @@ void testGen()
 {
 	AoutFile a;
 
-	a.addBSS(256);
+	a.allocBSS(256);
 
-	// generate text
+	// generate text segment
 	for (int i = 0; i < 256; i++)
 	{
 		a.addText(i);
 	}
 
-	// generate data
+	// generate data segment
 	for (int i = 0; i < 256; i++)
 	{
 		a.addData(i);
 	}
 
+	// generate text relocs
+	for (int i = 0; i < 10; i++)
+	{
+		RelocationEntry re;
+		
+		re.address = 0xfefe;
+		a.addTextRelocation(re);
+	}
+
+	// generate data relocs
+	for (int i = 0; i < 10; i++)
+	{
+		RelocationEntry re;
+
+		a.addDataRelocation(re);
+	}
+
 	FILE *f = nullptr;
 	fopen_s(&f, "a.out", "wb");
-	a.writeFile(f);
+		a.writeFile(f);
 	fclose(f);
 }
 

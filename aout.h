@@ -1,10 +1,10 @@
+#ifndef __AOUT_H
+#define __AOUT_H
+
 #pragma once
 
 #include <vector>
 #include <map>
-
-#ifndef __AOUT_H
-#define __AOUT_H
 
 struct AOUT_HEADER
 {
@@ -22,20 +22,33 @@ static_assert(sizeof(AOUT_HEADER) == 32, "Invalid a.out header size!");
 
 struct RelocationEntry
 {
-	int address;	// offset within the segment (data or text) of the relocation item
-	unsigned int	symbolnum : 24,
-					pcrel : 1,
-					length : 2,
-					external : 1,
-					spare : 4;
-					//r_baserel : 1,
-					//r_jmptable : 1,
-					//r_relative : 1,
-					//r_copy : 1;
+	uint32_t	address;		// offset within the segment (data or text) of the relocation item
+	uint32_t	index : 24,		// if extern is true, index number into the symbol table of this item, otherwise it identifies which segment text/data/bss
+				pcrel : 1,		// is the address relative
+				length : 2,
+				external : 1,	// is the symbol external to this segment
+				spare : 4;		// unused
+				//r_baserel : 1,
+				//r_jmptable : 1,
+				//r_relative : 1,
+				//r_copy : 1;
 };
 
 static_assert(sizeof(RelocationEntry) == 8, "Invalid relocation entry!");
 
+//
+//
+//
+struct SymbolEntity
+{
+	uint32_t nameOffset;	// offset in the string table of the null-terminated name of the symbol
+	uint32_t type;
+	uint32_t value;
+};
+
+//
+//
+//
 class ObjectFile
 {
 public:
@@ -43,6 +56,9 @@ public:
 	virtual ~ObjectFile() {}
 };
 
+//
+//
+//
 class AoutFile : public ObjectFile
 {
 protected:
@@ -57,7 +73,11 @@ protected:
 	Relocations textRelocs;
 	Relocations dataRelocs;
 
-	//std::map<> symbol_table;
+	using SymbolTable = std::map<std::string, SymbolEntity>;
+	SymbolTable symbolTable;
+
+	using StringTable = std::vector<char>;
+	StringTable stringTable;
 
 public:
 	AoutFile();
@@ -66,12 +86,15 @@ public:
 	int writeFile(FILE *fptr);
 	int readFile(FILE *fptr);
 
-	void addBSS(size_t size);
 
+	// code/data segments
 	void addText(uint8_t item);
 	void addData(uint8_t item);
-	void addSymbol();
-	void addString();
+	uint32_t allocBSS(size_t size);
+
+	// symbols
+	void addSymbol(const std::string &name, const SymbolEntity &sym);
+	uint32_t addString(const std::string &name);
 
 	// relocations
 	void addTextRelocation(RelocationEntry&);

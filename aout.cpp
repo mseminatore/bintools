@@ -25,6 +25,8 @@ int AoutFile::writeFile(FILE *fptr)
 	// update the header
 	file_header.a_text = text_segment.size();
 	file_header.a_data = data_segment.size();
+	file_header.a_trsize = textRelocs.size();
+	file_header.a_drsize = dataRelocs.size();
 
 	// write the header
 	auto result = fwrite(&file_header, sizeof(file_header), 1, fptr);
@@ -36,7 +38,10 @@ int AoutFile::writeFile(FILE *fptr)
 	fwrite(data_segment.data(), data_segment.size(), 1, fptr);
 
 	// write the text relocations
+	fwrite(textRelocs.data(), textRelocs.size(), 1, fptr);
+
 	// write the data relocations
+	fwrite(dataRelocs.data(), dataRelocs.size(), 1, fptr);
 
 	// write the symbol table
 	// write the string table
@@ -72,9 +77,12 @@ int AoutFile::readFile(FILE *fptr)
 	return 0;
 }
 
-void AoutFile::addBSS(size_t size)
+uint32_t AoutFile::allocBSS(size_t size)
 {
+	uint32_t loc = file_header.a_bss;
 	file_header.a_bss += size;
+
+	return loc;
 }
 
 void AoutFile::addText(uint8_t item)
@@ -87,14 +95,15 @@ void AoutFile::addData(uint8_t item)
 	data_segment.push_back(item);
 }
 
-void AoutFile::addSymbol()
+void AoutFile::addSymbol(const std::string &name, const SymbolEntity &sym)
 {
-
+	symbolTable.insert(SymbolTable::value_type(name, sym));
 }
 
-void AoutFile::addString()
+uint32_t AoutFile::addString(const std::string &name)
 {
-
+	uint32_t offset = stringTable.size();
+	return offset;
 }
 
 void AoutFile::addTextRelocation(RelocationEntry &r)

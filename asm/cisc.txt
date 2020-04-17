@@ -1,0 +1,26 @@
+imm8 - 8-bit immediate value
+imm16 - 16-bit immediate value
+addr - 16-bit address
+
+R - A, X, PC
+
++---------------+---------------------------------+-----------------------------
+| Instruction   | Description                     | Opcode
++---------------+---------------------------------+-----------------------------
+| NOP           |                                 | 0x00
+| ADD imm8      | A <- A + imm8                   | 0x01 imm8
+| SUB imm8      | A <- A - imm8                   | 0x02 imm8
+| ADD imm16     | X <- X + imm16                  | 0x03 imm16
+| SUB imm16     | X <- X - imm16                  | 0x04 imm16
+| JSR addr      | SP <- PC; SP--; PC <- addr      | 0x05 addr
+| PUSH R        |                                 | 0x06 R
+| POP R         |                                 | 0x07 R
+| JMP addr      | PC <- addr                      | 0x08 addr
+| RET
+| LDA imm8
+| LDX imm16
+| AND
+| OR
+| XOR
+| NOT
+| CMP

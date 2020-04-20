@@ -88,8 +88,8 @@ public:
 
 
 	// code/data segments
-	void addText(uint8_t item);
-	void addData(uint8_t item);
+	uint32_t addText(uint8_t item);
+	uint32_t addData(uint8_t item);
 	uint32_t allocBSS(size_t size);
 
 	// symbols

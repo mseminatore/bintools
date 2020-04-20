@@ -111,16 +111,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\aout.cpp" />
-    <ClCompile Include="baseparser.cpp" />
-    <ClCompile Include="lexer.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="symboltable.cpp" />
+    <ClCompile Include="ParserKit\baseparser.cpp" />
+    <ClCompile Include="ParserKit\lexer.cpp" />
+    <ClCompile Include="ParserKit\symboltable.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\aout.h" />
-    <ClInclude Include="baseparser.h" />
-    <ClInclude Include="lexer.h" />
-    <ClInclude Include="symboltable.h" />
+    <ClInclude Include="ParserKit\baseparser.h" />
+    <ClInclude Include="ParserKit\lexer.h" />
+    <ClInclude Include="ParserKit\symboltable.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,6 +1,8 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "../aout.h"
 #include <stdio.h>
-#include "baseparser.h"
+#include "./ParserKit/baseparser.h"
 
 //
 //
@@ -16,7 +18,9 @@ public:
 
 	int yyparse() override;
 
-	void DoFile();
+	void doLabel();
+	void doFile();
+	void writeFile(const std::string &name);
 };
 
 //
@@ -28,14 +32,38 @@ enum
 	TV_NOP = TV_USER,
 	TV_ADD,
 	TV_SUB,
+	TV_LDA,
+	TV_STO,
+
 	TV_A,
 	TV_X,
 	TV_CC,
 	TV_SP,
 	TV_PC,
+	
+	TV_DB,
+	TV_DW,
+
 	TV_CALL,
 	TV_RET,
-	TV_EQU
+	TV_EQU,
+	TV_JMP,
+	TV_AND,
+	TV_OR,
+	TV_XOR,
+	TV_NOT,
+	TV_PUSH,
+	TV_POP
+};
+
+enum
+{
+	OP_NOP,
+	OP_ADD,
+	OP_SUB,
+	OP_CALL,
+	OP_RET,
+	OP_JMP,
 };
 
 //
@@ -49,6 +77,9 @@ TokenTable _tokenTable[] =
 	{ "CALL",	TV_CALL},
 	{ "A",		TV_A},
 	{ "EQU",	TV_EQU},
+	{ "JMP",	TV_JMP},
+	{ "DB",		TV_DB},
+	{ "DW",		TV_DW},
 
 	{ nullptr,	TV_DONE }
 };
@@ -69,44 +100,97 @@ AsmParser::AsmParser() : BaseParser(std::make_unique<SymbolTable>())
 //
 //
 //
-void AsmParser::DoFile()
+void AsmParser::doLabel()
+{
+	// we found a new symbol
+	auto sym = yylval.sym;
+
+	match();
+
+	switch (lookahead)
+	{
+	case ':':
+		// code address label
+		match();
+		break;
+
+	case TV_EQU:
+		// named constant
+		match();
+		if (lookahead == TV_INTVAL)
+		{
+			sym->ival = yylval.ival;
+			match();
+		}
+		break;
+
+	case TV_DB:
+		// data byte
+		match();
+
+		// 
+		if (lookahead == TV_INTVAL)
+		{
+			sym->ival = obj.addData(yylval.ival);
+			match();
+		}
+		else
+		{
+			sym->ival = obj.addData(yylval.char_val);
+			match();
+		}
+		break;
+
+	case TV_DW:
+		// data word
+		match();
+
+		// 
+		//sym->ival = obj.addData(yylval.char_val);
+		match(TV_INTVAL);
+		break;
+
+	default:
+		yyerror("syntax error");
+		break;
+	}
+}
+
+//
+//
+//
+void AsmParser::doFile()
 {
 	//DoIncludes();
 	while (lookahead != TV_DONE)
 	{
-		SymbolEntry *sym;
-
 		switch (lookahead)
 		{
 		case TV_ID:
-			// we found a new symbol name
-			sym = yylval.sym;
-
-			match();
-
-			if (lookahead == ':')
-			{
-				match(':');
-			}
-			else if (lookahead == TV_EQU)
-			{
-				match();
-				if (lookahead == TV_INTVAL)
-				{
-					sym->ival = yylval.ival;
-					match();
-				}
-			}
+			doLabel();
 			break;
 
 		case TV_NOP:
-			obj.addText(0);
+			obj.addText(OP_NOP);
 			match();
 
 			break;
 
 		case TV_ADD:
-			obj.addText(1);
+			obj.addText(OP_ADD);
+			match();
+
+			// operand
+			match();
+			break;
+		
+		case TV_JMP:
+			obj.addText(OP_JMP);
+			match();
+
+			// label
+			match();
+
 			break;
 
 		default:
@@ -118,14 +202,28 @@ void AsmParser::DoFile()
 //
 //
 //
+void AsmParser::writeFile(const std::string &name)
+{
+	FILE *f = fopen(name.c_str(), "wb");
+	if (nullptr == f)
+		return;
+
+	obj.writeFile(f);
+}
+
+//
+//
+//
 int AsmParser::yyparse()
 {
 	BaseParser::yyparse();
 
-	DoFile();
+	doFile();
 
 	//if (yydebug)
 	//	root.dumpAll();
+
+	writeFile("a.out");
 
 	return 0;
 }
@@ -154,6 +252,9 @@ int getopt(int n, char *args[])
 	{
 		if (args[i][1] == 'v')
 			g_bDebug = true;
+
+		//if (args[i][1] == 'o')
+		//	g_bDebug = true;
 	}
 
 	return i;

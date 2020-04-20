@@ -85,14 +85,22 @@ uint32_t AoutFile::allocBSS(size_t size)
 	return loc;
 }
 
-void AoutFile::addText(uint8_t item)
+uint32_t AoutFile::addText(uint8_t item)
 {
+	uint32_t addr = text_segment.size();
+	
 	text_segment.push_back(item);
+	
+	return addr;
 }
 
-void AoutFile::addData(uint8_t item)
+uint32_t AoutFile::addData(uint8_t item)
 {
+	uint32_t addr = data_segment.size();
+
 	data_segment.push_back(item);
+
+	return addr;
 }
 
 void AoutFile::addSymbol(const std::string &name, const SymbolEntity &sym)

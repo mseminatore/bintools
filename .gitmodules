@@ -1,0 +1,3 @@
+[submodule "asm/ParserKit"]
+	path = asm/ParserKit
+	url = https://github.com/mseminatore/ParserKit.git

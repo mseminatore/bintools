@@ -33,7 +33,9 @@ enum
 	TV_ADD,
 	TV_SUB,
 	TV_LDA,
-	TV_STO,
+	TV_LDI,
+	TV_LDX,
+	TV_STA,
 
 	TV_A,
 	TV_X,
@@ -64,6 +66,9 @@ enum
 	OP_CALL,
 	OP_RET,
 	OP_JMP,
+	OP_LDA,
+	OP_LDI,
+	OP_STA
 };
 
 //
@@ -75,11 +80,21 @@ TokenTable _tokenTable[] =
 	{ "ADD",	TV_ADD },
 	{ "SUB",	TV_SUB },
 	{ "CALL",	TV_CALL},
-	{ "A",		TV_A},
-	{ "EQU",	TV_EQU},
 	{ "JMP",	TV_JMP},
+	
+	{ "EQU",	TV_EQU },
 	{ "DB",		TV_DB},
 	{ "DW",		TV_DW},
+	
+	{ "LDA",	TV_LDA},
+	{ "LDI",	TV_LDI},
+	{ "STA",	TV_STA},
+
+	{ "A",		TV_A},
+	{ "X",		TV_X},
+	{ "CC",		TV_CC},
+	{ "SP",		TV_SP},
+	{ "PC",		TV_PC},
 
 	{ nullptr,	TV_DONE }
 };
@@ -146,8 +161,8 @@ void AsmParser::doLabel()
 		match();
 
 		// 
-		//sym->ival = obj.addData(yylval.char_val);
-		match(TV_INTVAL);
+		sym->ival = obj.addData(yylval.ival);
+		match();
 		break;
 
 	default:
@@ -191,6 +206,43 @@ void AsmParser::doFile()
 			// label
 			match();
 
+			break;
+
+		case TV_LDI:
+			obj.addText(OP_LDI);
+			match();
+			
+			obj.addText(yylval.ival);
+			match();
+			break;
+
+		case TV_LDA:
+			obj.addText(OP_LDA);
+			match();
+			
+			if (lookahead == TV_INTVAL)
+			{
+				obj.addText(yylval.ival);
+				match();
+			}
+			else if (lookahead == TV_ID) {
+				obj.addText(yylval.sym->ival);
+				match();
+			}
+			else {
+				yyerror("syntax error");
+			}
+			break;
+
+		case TV_STA:
+			obj.addText(OP_STA);
+			match();
+
+			obj.addText(yylval.ival);
+			match();
+			break;
+
+		case TV_LDX:
 			break;
 
 		default:

@@ -12,7 +12,9 @@ START:
     ADD 23      // A <- A + 23
     ADD 'c'     // A <- A + 'c'
     ADD 0xFF
-    LDA
-    STA
-    LDX
+    LDI 0x10    // A <- imm8
+    LDA 0xFFFF  // A <- addr16
+    LDA value   // A <- addr16
+    STA 0xFFFE  // addr16 <- A
+    LDX 0x100   // X <- imm16
     JMP start

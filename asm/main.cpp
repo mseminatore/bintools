@@ -4,6 +4,14 @@
 #include <stdio.h>
 #include "./ParserKit/baseparser.h"
 
+#define LOBYTE(val) ((val) & 0xFF)
+#define HIBYTE(val) (((val) & 0xFF00) >> 8)
+
+//
+// Command line switches
+//
+bool g_bDebug = false;
+
 //
 //
 //
@@ -18,8 +26,12 @@ public:
 
 	int yyparse() override;
 
-	void doLabel();
-	void doFile();
+	void address();
+	void label();
+	void file();
+	uint8_t reg();
+	uint8_t regSet();
+
 	void writeFile(const std::string &name);
 };
 
@@ -32,10 +44,12 @@ enum
 	TV_NOP = TV_USER,
 	TV_ADD,
 	TV_SUB,
+
 	TV_LDA,
 	TV_LDI,
 	TV_LDX,
 	TV_STA,
+	TV_LAX,
 
 	TV_A,
 	TV_X,
@@ -46,14 +60,20 @@ enum
 	TV_DB,
 	TV_DW,
 
+	TV_EQU,
+	TV_ORG,
+
 	TV_CALL,
 	TV_RET,
-	TV_EQU,
 	TV_JMP,
+	TV_JNE,
+	TV_JEQ,
+
 	TV_AND,
 	TV_OR,
 	TV_XOR,
 	TV_NOT,
+
 	TV_PUSH,
 	TV_POP
 };
@@ -61,14 +81,24 @@ enum
 enum
 {
 	OP_NOP,
+
 	OP_ADD,
 	OP_SUB,
+
 	OP_CALL,
 	OP_RET,
 	OP_JMP,
+	OP_JNE,
+	OP_JEQ,
+
 	OP_LDA,
 	OP_LDI,
-	OP_STA
+	OP_LDX,
+	OP_LAX,
+	OP_STA,
+
+	OP_PUSH,
+	OP_POP
 };
 
 //
@@ -79,9 +109,13 @@ TokenTable _tokenTable[] =
 	{ "NOP",	TV_NOP },
 	{ "ADD",	TV_ADD },
 	{ "SUB",	TV_SUB },
+
 	{ "CALL",	TV_CALL},
 	{ "JMP",	TV_JMP},
-	
+	{ "JNE",	TV_JNE},
+	{ "JEQ",	TV_JEQ},
+
+	{ "ORG",	TV_ORG},
 	{ "EQU",	TV_EQU },
 	{ "DB",		TV_DB},
 	{ "DW",		TV_DW},
@@ -89,12 +123,17 @@ TokenTable _tokenTable[] =
 	{ "LDA",	TV_LDA},
 	{ "LDI",	TV_LDI},
 	{ "STA",	TV_STA},
+	{ "LDX",	TV_LDX},
+	{ "LAX",	TV_LAX},
 
 	{ "A",		TV_A},
 	{ "X",		TV_X},
 	{ "CC",		TV_CC},
 	{ "SP",		TV_SP},
 	{ "PC",		TV_PC},
+
+	{ "PUSH",	TV_PUSH},
+	{ "POP",	TV_POP},
 
 	{ nullptr,	TV_DONE }
 };
@@ -115,7 +154,7 @@ AsmParser::AsmParser() : BaseParser(std::make_unique<SymbolTable>())
 //
 //
 //
-void AsmParser::doLabel()
+void AsmParser::label()
 {
 	// we found a new symbol
 	auto sym = yylval.sym;
@@ -157,12 +196,17 @@ void AsmParser::doLabel()
 		break;
 
 	case TV_DW:
+	{
 		// data word
 		match();
 
-		// 
-		sym->ival = obj.addData(yylval.ival);
+		auto val = yylval.ival;
+
+		sym->ival = obj.addData(LOBYTE(val));
+		obj.addData(HIBYTE(val));
+
 		match();
+	}
 		break;
 
 	default:
@@ -174,15 +218,129 @@ void AsmParser::doLabel()
 //
 //
 //
-void AsmParser::doFile()
+//void AsmParser::imm8()
+//{
+//
+//}
+
+enum
+{
+	REG_A = 1,
+	REG_X = 2,
+	REG_SP = 4,
+	REG_CC = 8,
+	REG_PC = 16
+};
+
+//
+//
+//
+uint8_t AsmParser::reg()
+{
+	uint8_t reg = 0;
+
+	switch (lookahead)
+	{
+	case TV_A:
+		reg = REG_A;
+		match();
+		break;
+
+	case TV_X:
+		reg = REG_X;
+		match();
+		break;
+
+	case TV_SP:
+		reg = REG_SP;
+		match();
+		break;
+
+	case TV_CC:
+		reg = REG_CC;
+		match();
+		break;
+
+	case TV_PC:
+		reg = REG_PC;
+		match();
+		break;
+	}
+	
+	return reg;
+}
+
+//
+//
+//
+uint8_t AsmParser::regSet()
+{
+	uint8_t val, regs = 0;
+
+	while (val = reg())
+	{
+		regs |= val;
+		if (lookahead == ',')
+			match();
+	}
+
+	return regs;
+}
+
+//
+// Parse an address or label
+//
+void AsmParser::address()
+{
+	if (lookahead == TV_INTVAL)
+	{
+		auto val = yylval.ival;
+
+		// TODO - reloc needed!
+		auto addr = obj.addText(LOBYTE(val));
+		obj.addText(HIBYTE(val));
+
+		RelocationEntry re;
+		re.address = addr;
+		re.length = 2;
+		obj.addTextRelocation(re);
+
+		match();
+	}
+	else if (lookahead == TV_ID) 
+	{
+		auto val = yylval.sym->ival;
+
+		// TODO - reloc needed!
+		auto addr = obj.addText(LOBYTE(val));
+		obj.addText(HIBYTE(val));
+
+		RelocationEntry re;
+		re.address = addr;
+		re.length = 2;
+		obj.addTextRelocation(re);
+
+		match();
+	}
+	else 
+	{
+		yyerror("syntax error");
+	}
+}
+
+//
+//
+//
+void AsmParser::file()
 {
 	//DoIncludes();
+
 	while (lookahead != TV_DONE)
 	{
 		switch (lookahead)
 		{
 		case TV_ID:
-			doLabel();
+			label();
 			break;
 
 		case TV_NOP:
@@ -195,17 +353,37 @@ void AsmParser::doFile()
 			obj.addText(OP_ADD);
 			match();
 
-			// operand
+			// TODO operand
 			match();
 			break;
-		
+
+		case TV_SUB:
+			obj.addText(OP_SUB);
+			match();
+
+			// TODO operand
+			match();
+			break;
+
 		case TV_JMP:
 			obj.addText(OP_JMP);
 			match();
 
-			// label
+			address();
+			break;
+
+		case TV_JNE:
+			obj.addText(OP_JNE);
 			match();
 
+			address();
+			break;
+
+		case TV_JEQ:
+			obj.addText(OP_JEQ);
+			match();
+
+			address();
 			break;
 
 		case TV_LDI:
@@ -220,29 +398,42 @@ void AsmParser::doFile()
 			obj.addText(OP_LDA);
 			match();
 			
-			if (lookahead == TV_INTVAL)
-			{
-				obj.addText(yylval.ival);
-				match();
-			}
-			else if (lookahead == TV_ID) {
-				obj.addText(yylval.sym->ival);
-				match();
-			}
-			else {
-				yyerror("syntax error");
-			}
+			address();
 			break;
 
 		case TV_STA:
 			obj.addText(OP_STA);
 			match();
 
-			obj.addText(yylval.ival);
-			match();
+			address();
 			break;
 
 		case TV_LDX:
+			obj.addText(OP_STA);
+			match();
+
+			obj.addText(yylval.ival);
+			match();
+			break;
+		
+		case TV_LAX:
+			obj.addText(OP_LAX);
+			match();
+
+			break;
+
+		case TV_PUSH:
+			obj.addText(OP_PUSH);
+			match();
+
+			obj.addText(regSet());
+			break;
+
+		case TV_POP:
+			obj.addText(OP_POP);
+			match();
+
+			obj.addText(regSet());
 			break;
 
 		default:
@@ -270,7 +461,7 @@ int AsmParser::yyparse()
 {
 	BaseParser::yyparse();
 
-	doFile();
+	file();
 
 	//if (yydebug)
 	//	root.dumpAll();
@@ -279,11 +470,6 @@ int AsmParser::yyparse()
 
 	return 0;
 }
-
-//
-// Command line switches
-//
-bool g_bDebug = false;
 
 //
 // show usage

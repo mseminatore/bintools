@@ -25,13 +25,17 @@ struct RelocationEntry
 	uint32_t	address;		// offset within the segment (data or text) of the relocation item
 	uint32_t	index : 24,		// if extern is true, index number into the symbol table of this item, otherwise it identifies which segment text/data/bss
 				pcrel : 1,		// is the address relative
-				length : 2,
+				length : 2,		// byte size of the entry
 				external : 1,	// is the symbol external to this segment
 				spare : 4;		// unused
 				//r_baserel : 1,
 				//r_jmptable : 1,
 				//r_relative : 1,
 				//r_copy : 1;
+	RelocationEntry()
+	{
+		address = index = pcrel = length = external = spare = 0;
+	}
 };
 
 static_assert(sizeof(RelocationEntry) == 8, "Invalid relocation entry!");
@@ -104,6 +108,8 @@ public:
 	void dumpHeader(FILE*);
 	void dumpText(FILE*);
 	void dumpData(FILE*);
+	void dumpTextRelocs(FILE*);
+	void dumpDataRelocs(FILE*);
 
 	void hexDumpGroup(FILE *f, uint8_t *buf);
 	void hexDumpLine(FILE *f, uint32_t offset, uint8_t *buf);

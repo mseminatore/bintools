@@ -4,6 +4,8 @@
 //
 bool g_bDumpText = false;
 bool g_bDumpData = false;
+bool g_bDumpTextRelocs = false;
+bool g_bDumpDataRelocs = false;
 bool g_bGenerateTestFile = false;
 bool g_bDumpSymbols = false;
 bool g_bDumpStrings = false;
@@ -32,6 +34,12 @@ int getopt(int n, char *args[])
 
 		if (args[i][1] == 'd')
 			g_bDumpData = true;
+
+		if (args[i][1] == 'r')
+		{
+			g_bDumpTextRelocs = true;
+			g_bDumpDataRelocs = true;
+		}
 
 		if (args[i][1] == 'g')
 			g_bGenerateTestFile = true;
@@ -120,4 +128,10 @@ void main(int argc, char *argv[])
 	// optionally dump the data segment
 	if (g_bDumpData)
 		a.dumpData(stdout);
+
+	if (g_bDumpTextRelocs)
+		a.dumpTextRelocs(stdout);
+
+	if (g_bDumpDataRelocs)
+		a.dumpDataRelocs(stdout);
 }

@@ -38,10 +38,16 @@ int AoutFile::writeFile(FILE *fptr)
 	fwrite(data_segment.data(), data_segment.size(), 1, fptr);
 
 	// write the text relocations
-	fwrite(textRelocs.data(), textRelocs.size(), 1, fptr);
+	for (auto iter = textRelocs.begin(); iter != textRelocs.end(); iter++)
+	{
+		fwrite(&(*iter), sizeof(RelocationEntry), 1, fptr);
+	}
 
 	// write the data relocations
-	fwrite(dataRelocs.data(), dataRelocs.size(), 1, fptr);
+	for (auto iter = dataRelocs.begin(); iter != dataRelocs.end(); iter++)
+	{
+		fwrite(&(*iter), sizeof(RelocationEntry), 1, fptr);
+	}
 
 	// write the symbol table
 	// write the string table
@@ -70,6 +76,24 @@ int AoutFile::readFile(FILE *fptr)
 	{
 		auto c = fgetc(fptr);
 		data_segment.push_back(c);
+	}
+
+	// read the text relocations
+	for (int i = 0; i < file_header.a_trsize; i++)
+	{
+		RelocationEntry re;
+
+		fread(&re, sizeof(re), 1, fptr);
+		textRelocs.push_back(re);
+	}
+
+	// read the data relocations
+	for (int i = 0; i < file_header.a_drsize; i++)
+	{
+		RelocationEntry re;
+
+		fread(&re, sizeof(re), 1, fptr);
+		dataRelocs.push_back(re);
 	}
 
 	// read the symbol table
@@ -116,12 +140,12 @@ uint32_t AoutFile::addString(const std::string &name)
 
 void AoutFile::addTextRelocation(RelocationEntry &r)
 {
-
+	textRelocs.push_back(r);
 }
 
 void AoutFile::addDataRelocation(RelocationEntry &r)
 {
-
+	dataRelocs.push_back(r);
 }
 
 void AoutFile::dumpHeader(FILE *f)
@@ -227,5 +251,43 @@ void AoutFile::dumpData(FILE *f)
 
 	Segment::value_type *pData = data_segment.data();
 	hexDumpSegment(f, data_segment.data(), data_segment.size());
+	fputc('\n', f);
+}
+
+void AoutFile::dumpTextRelocs(FILE *f)
+{
+	assert(f != nullptr);
+	if (f == nullptr)
+		return;
+
+	fprintf(f, "Text segment relocations\n");
+	fprintf(f, "------------------------\n\n");
+
+	auto iter = textRelocs.begin();
+	for (;iter != textRelocs.end(); iter++)
+	{
+		auto re = *iter;
+		fprintf(f, "address: 0x%04X, external: %d, size: %d\n", re.address, re.external, re.length);
+	}
+
+	fputc('\n', f);
+}
+
+void AoutFile::dumpDataRelocs(FILE *f)
+{
+	assert(f != nullptr);
+	if (f == nullptr)
+		return;
+
+	fprintf(f, "Data segment relocations\n");
+	fprintf(f, "------------------------\n\n");
+
+	auto iter = dataRelocs.begin();
+	for (; iter != dataRelocs.end(); iter++)
+	{
+		auto re = *iter;
+		fprintf(f, "address: 0x%04X, external: %d, size: %d\n", re.address, re.external, re.length);
+	}
+
 	fputc('\n', f);
 }

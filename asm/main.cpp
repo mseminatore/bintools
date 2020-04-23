@@ -26,6 +26,7 @@ public:
 
 	int yyparse() override;
 
+	void memOperand(int immOp, int memOp);
 	void address();
 	void label();
 	void file();
@@ -83,7 +84,10 @@ enum
 	OP_NOP,
 
 	OP_ADD,
+	OP_ADDI,
+
 	OP_SUB,
+	OP_SUBI,
 
 	OP_CALL,
 	OP_RET,
@@ -114,6 +118,7 @@ TokenTable _tokenTable[] =
 	{ "JMP",	TV_JMP},
 	{ "JNE",	TV_JNE},
 	{ "JEQ",	TV_JEQ},
+	{ "RET",	TV_RET},
 
 	{ "ORG",	TV_ORG},
 	{ "EQU",	TV_EQU },
@@ -232,6 +237,13 @@ enum
 	REG_PC = 16
 };
 
+enum
+{
+	FLAG_Z = 1,
+	FLAG_C = 2,
+	FLAG_I = 4
+};
+
 //
 //
 //
@@ -285,6 +297,72 @@ uint8_t AsmParser::regSet()
 	}
 
 	return regs;
+}
+
+//
+// an 8b immediate value or an address
+//
+void AsmParser::memOperand(int immOp, int memOp)
+{
+	bool isAddrOperand = false;
+
+	match();
+
+	if (lookahead == '[')
+	{
+		obj.addText(memOp);
+		isAddrOperand = true;
+		match();
+	}
+	else
+	{
+		obj.addText(immOp);
+	}
+
+	switch (lookahead)
+	{
+	case TV_CHARVAL:	// immediate value
+	{
+		if (isAddrOperand)
+			yyerror("character literal not allowed!");
+
+		auto val = yylval.char_val;
+
+		obj.addText(LOBYTE(val));
+		match();
+	}
+		break;
+
+	case TV_INTVAL:	// immediate value
+	{
+		auto val = yylval.ival;
+
+		obj.addText(LOBYTE(val));
+		if (isAddrOperand)
+			obj.addText(HIBYTE(val));
+
+		match();
+	}
+		break;
+
+	case TV_ID:	// named immediate value
+	{
+		auto val = yylval.sym->ival;
+
+		obj.addText(LOBYTE(val));
+		if (isAddrOperand)
+			obj.addText(HIBYTE(val));
+
+		match();
+	}
+		break;
+	
+	default:
+		yyerror("invalid memory operand!");
+	}
+
+	if (isAddrOperand)
+		match(']');
 }
 
 //
@@ -350,19 +428,11 @@ void AsmParser::file()
 			break;
 
 		case TV_ADD:
-			obj.addText(OP_ADD);
-			match();
-
-			// TODO operand
-			match();
+			memOperand(OP_ADDI, OP_ADD);
 			break;
 
 		case TV_SUB:
-			obj.addText(OP_SUB);
-			match();
-
-			// TODO operand
-			match();
+			memOperand(OP_SUBI, OP_SUB);
 			break;
 
 		case TV_JMP:
@@ -384,6 +454,19 @@ void AsmParser::file()
 			match();
 
 			address();
+			break;
+
+		case TV_CALL:
+			obj.addText(OP_CALL);
+			match();
+
+			address();
+			break;
+
+		case TV_RET:
+			obj.addText(OP_RET);
+			match();
+
 			break;
 
 		case TV_LDI:

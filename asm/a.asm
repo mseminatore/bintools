@@ -19,8 +19,19 @@ START:
     ADD 23      // A <- A + 23
     ADD 'c'     // A <- A + 'c'
     ADD 0xFF
+    ADD value
+    ADD [0x100]
+    ADD [value]
+    SUB 23
+    SUB 'a'
+    SUB 0x01
+    SUB value
+    SUB [0xFFFF]
+    SUB [value]
+    SUB [timer]
 
     // branching
+//    call div
 
     // logic
 
@@ -53,3 +64,9 @@ loop1:
 
 done:    
     JMP done   // loop forever
+
+//
+// divide
+//
+div:
+    RET

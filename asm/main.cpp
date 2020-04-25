@@ -1,6 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include "../aout.h"
+#include "../cpu_cisc.h"
 #include <stdio.h>
 #include "./ParserKit/baseparser.h"
 
@@ -27,7 +28,7 @@ public:
 	int yyparse() override;
 
 	void memOperand(int immOp, int memOp);
-	void address();
+	void addressOperand(int op);
 	void label();
 	void file();
 	uint8_t reg();
@@ -47,10 +48,10 @@ enum
 	TV_SUB,
 
 	TV_LDA,
-	TV_LDI,
 	TV_LDX,
 	TV_STA,
 	TV_LAX,
+	TV_LEAX,
 
 	TV_A,
 	TV_X,
@@ -63,6 +64,8 @@ enum
 
 	TV_EQU,
 	TV_ORG,
+
+	TV_CMP,
 
 	TV_CALL,
 	TV_RET,
@@ -79,32 +82,6 @@ enum
 	TV_POP
 };
 
-enum
-{
-	OP_NOP,
-
-	OP_ADD,
-	OP_ADDI,
-
-	OP_SUB,
-	OP_SUBI,
-
-	OP_CALL,
-	OP_RET,
-	OP_JMP,
-	OP_JNE,
-	OP_JEQ,
-
-	OP_LDA,
-	OP_LDI,
-	OP_LDX,
-	OP_LAX,
-	OP_STA,
-
-	OP_PUSH,
-	OP_POP
-};
-
 //
 // Table of lexemes and tokens to be recognized by the lexer
 //
@@ -113,6 +90,13 @@ TokenTable _tokenTable[] =
 	{ "NOP",	TV_NOP },
 	{ "ADD",	TV_ADD },
 	{ "SUB",	TV_SUB },
+
+	{ "AND",	TV_AND },
+	{ "OR",		TV_OR },
+	{ "NOT",	TV_NOT },
+	{ "XOR",	TV_XOR },
+
+	{ "CMP",	TV_CMP },
 
 	{ "CALL",	TV_CALL},
 	{ "JMP",	TV_JMP},
@@ -126,10 +110,10 @@ TokenTable _tokenTable[] =
 	{ "DW",		TV_DW},
 	
 	{ "LDA",	TV_LDA},
-	{ "LDI",	TV_LDI},
 	{ "STA",	TV_STA},
 	{ "LDX",	TV_LDX},
 	{ "LAX",	TV_LAX},
+	{ "LEAX",	TV_LEAX},
 
 	{ "A",		TV_A},
 	{ "X",		TV_X},
@@ -221,31 +205,7 @@ void AsmParser::label()
 }
 
 //
-//
-//
-//void AsmParser::imm8()
-//{
-//
-//}
-
-enum
-{
-	REG_A = 1,
-	REG_X = 2,
-	REG_SP = 4,
-	REG_CC = 8,
-	REG_PC = 16
-};
-
-enum
-{
-	FLAG_Z = 1,
-	FLAG_C = 2,
-	FLAG_I = 4
-};
-
-//
-//
+// a single register
 //
 uint8_t AsmParser::reg()
 {
@@ -283,7 +243,7 @@ uint8_t AsmParser::reg()
 }
 
 //
-//
+// a set of registers
 //
 uint8_t AsmParser::regSet()
 {
@@ -337,9 +297,19 @@ void AsmParser::memOperand(int immOp, int memOp)
 	{
 		auto val = yylval.ival;
 
-		obj.addText(LOBYTE(val));
+		auto addr = obj.addText(LOBYTE(val));
 		if (isAddrOperand)
+		{
 			obj.addText(HIBYTE(val));
+
+			RelocationEntry re;
+			re.address	= addr;
+			re.length	= 1;
+			re.index	= SEG_TEXT;
+			re.external = 0;
+
+			obj.addTextRelocation(re);
+		}
 
 		match();
 	}
@@ -349,9 +319,19 @@ void AsmParser::memOperand(int immOp, int memOp)
 	{
 		auto val = yylval.sym->ival;
 
-		obj.addText(LOBYTE(val));
+		auto addr = obj.addText(LOBYTE(val));
 		if (isAddrOperand)
+		{
 			obj.addText(HIBYTE(val));
+
+			RelocationEntry re;
+			re.address = addr;
+			re.length = 1;
+			re.index = SEG_TEXT;
+			re.external = 0;
+
+			obj.addTextRelocation(re);
+		}
 
 		match();
 	}
@@ -366,21 +346,24 @@ void AsmParser::memOperand(int immOp, int memOp)
 }
 
 //
-// Parse an address or label
+// Parse a 16b address or label
 //
-void AsmParser::address()
+void AsmParser::addressOperand(int op)
 {
+	obj.addText(op);
+	match();
+
 	if (lookahead == TV_INTVAL)
 	{
 		auto val = yylval.ival;
 
-		// TODO - reloc needed!
 		auto addr = obj.addText(LOBYTE(val));
 		obj.addText(HIBYTE(val));
 
 		RelocationEntry re;
 		re.address = addr;
-		re.length = 2;
+		re.length = 1;
+		// TODO - choose relocation list based on branchTarget (bool)
 		obj.addTextRelocation(re);
 
 		match();
@@ -389,13 +372,13 @@ void AsmParser::address()
 	{
 		auto val = yylval.sym->ival;
 
-		// TODO - reloc needed!
 		auto addr = obj.addText(LOBYTE(val));
 		obj.addText(HIBYTE(val));
 
 		RelocationEntry re;
 		re.address = addr;
-		re.length = 2;
+		re.length = 1;
+		// TODO - choose relocation list based on branchTarget (bool)
 		obj.addTextRelocation(re);
 
 		match();
@@ -435,6 +418,77 @@ void AsmParser::file()
 			memOperand(OP_SUBI, OP_SUB);
 			break;
 
+		case TV_AND:
+			memOperand(OP_ANDI, OP_AND);
+			break;
+
+		case TV_OR:
+			memOperand(OP_ORI, OP_OR);
+			break;
+
+		case TV_NOT:
+			memOperand(OP_NOTI, OP_NOT);
+			break;
+
+		case TV_XOR:
+			memOperand(OP_XORI, OP_XOR);
+			break;
+
+		case TV_CMP:
+			memOperand(OP_CMPI, OP_CMP);
+			break;
+
+		case TV_LDA:
+			memOperand(OP_LDAI, OP_LDA);
+			break;
+
+		case TV_STA:
+			addressOperand(OP_STA);
+			break;
+
+		case TV_LDX:
+			memOperand(OP_LDXI, OP_LDX);
+			break;
+		
+		case TV_LAX:
+			obj.addText(OP_LAX);
+			match();
+			break;
+
+		case TV_LEAX:
+			obj.addText(OP_LEAX);
+			match();
+
+			i = 
+			// TODO - get/emit the imm8 parameter
+			if (lookahead == TV_INTVAL)
+			{
+
+			}
+			else if (lookahead == TV_CHARVAL)
+			{
+
+			}
+			else
+			{
+				yyerror("invalid operand!");
+			}
+			break;
+
+		case TV_PUSH:
+			obj.addText(OP_PUSH);
+			match();
+
+			obj.addText(regSet());
+			break;
+
+		case TV_POP:
+			obj.addText(OP_POP);
+			match();
+
+			obj.addText(regSet());
+			break;
+
 		case TV_JMP:
 			obj.addText(OP_JMP);
 			match();
@@ -467,56 +521,6 @@ void AsmParser::file()
 			obj.addText(OP_RET);
 			match();
 
-			break;
-
-		case TV_LDI:
-			obj.addText(OP_LDI);
-			match();
-			
-			obj.addText(yylval.ival);
-			match();
-			break;
-
-		case TV_LDA:
-			obj.addText(OP_LDA);
-			match();
-			
-			address();
-			break;
-
-		case TV_STA:
-			obj.addText(OP_STA);
-			match();
-
-			address();
-			break;
-
-		case TV_LDX:
-			obj.addText(OP_STA);
-			match();
-
-			obj.addText(yylval.ival);
-			match();
-			break;
-		
-		case TV_LAX:
-			obj.addText(OP_LAX);
-			match();
-
-			break;
-
-		case TV_PUSH:
-			obj.addText(OP_PUSH);
-			match();
-
-			obj.addText(regSet());
-			break;
-
-		case TV_POP:
-			obj.addText(OP_POP);
-			match();
-
-			obj.addText(regSet());
 			break;
 
 		default:

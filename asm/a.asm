@@ -1,12 +1,12 @@
 // define our constants
 value EQU 0x10
 
-// global variables
+// global variables in the DATA segment. label is the addr in the DATA segment
 lives DB 0
 switch DB '/'
 timer DB 0xFF
-
 score DW 0x1234
+
 //name ds "daykrew"
 
     // program origin
@@ -21,7 +21,7 @@ START:
     ADD 0xFF
     ADD value
     ADD [0x100]
-    ADD [value]
+    ADD [lives]
     SUB 23
     SUB 'a'
     SUB 0x01
@@ -34,11 +34,15 @@ START:
 //    call div
 
     // logic
+    AND 0xFF
+    AND [value]
+    OR 0x01
+    XOR 0xFF
 
     // loads/stores
-    LDA 0xFFFF  // A <- [addr16]
-    LDA value   // A <- [addr16]
-    LDI 0x10    // A <- imm8
+    LDA [0xFFFF]  // A <- [addr16]
+    LDA [value]   // A <- [addr16]
+    LDA 0x10    // A <- imm8
     LDX 0x100   // X <- imm16
     LAX         // A <- [X]
     STA 0xFFFE  // addr16 <- A
@@ -52,7 +56,7 @@ START:
     POP A,X
 
     // for i = 1, 10 loop
-    LDI 10
+    LDA 10
 loop1:
     PUSH A
 
@@ -69,4 +73,25 @@ done:
 // divide
 //
 div:
+    PUSH X
+    PUSH SP     // get the stack frame pointer in X
+    POP X
+
+    LEAX 12     // get the address of the value
+    LEAX 'c'
+    LAX         // load the value at [X] into A
+
+    POP X
+    RET
+
+//
+// Input: X points to the string
+// Return: A contains the length
+//
+_strlen:
+    LDA 0
+    PUSH A
+
+    LAX
+    
     RET

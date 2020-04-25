@@ -118,6 +118,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\aout.h" />
+    <ClInclude Include="..\cpu_cisc.h" />
     <ClInclude Include="ParserKit\baseparser.h" />
     <ClInclude Include="ParserKit\lexer.h" />
     <ClInclude Include="ParserKit\symboltable.h" />

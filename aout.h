@@ -20,12 +20,19 @@ struct AOUT_HEADER
 
 static_assert(sizeof(AOUT_HEADER) == 32, "Invalid a.out header size!");
 
+enum
+{
+	SEG_TEXT,
+	SEG_DATA,
+	SEG_BSS
+};
+
 struct RelocationEntry
 {
 	uint32_t	address;		// offset within the segment (data or text) of the relocation item
 	uint32_t	index : 24,		// if extern is true, index number into the symbol table of this item, otherwise it identifies which segment text/data/bss
-				pcrel : 1,		// is the address relative
-				length : 2,		// byte size of the entry
+				pcrel : 1,		// is the address relative to PC
+				length : 2,		// byte size of the entry 0,1,2,3 = 1,2,4,8
 				external : 1,	// is the symbol external to this segment
 				spare : 4;		// unused
 				//r_baserel : 1,

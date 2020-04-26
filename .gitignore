@@ -3,6 +3,7 @@
 
 # Asm files
 *.asm
+*.inc
 
 # Compiled Object files
 *.slo

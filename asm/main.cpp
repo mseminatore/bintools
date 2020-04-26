@@ -17,6 +17,7 @@ enum
 {
 	stEqu = stUser,
 	stLabel,
+	stProc,
 	stDataByte,
 	stDataWord
 };
@@ -35,12 +36,16 @@ public:
 
 	int yyparse() override;
 
+
 	void imm8(int op);
 	void memOperand(int immOp, int memOp);
 	void dataAddress(int op);
 	void codeAddress(int op);
+
+	void include();
 	void label();
 	void file();
+
 	uint8_t reg();
 	uint8_t regSet();
 
@@ -94,7 +99,9 @@ enum
 	TV_POP,
 
 	TV_PUBLIC,
-	TV_EXTERN
+	TV_EXTERN,
+	TV_PROC,
+	TV_INCLUDE
 };
 
 //
@@ -141,6 +148,11 @@ TokenTable _tokenTable[] =
 	{ "PUSH",	TV_PUSH },
 	{ "POP",	TV_POP },
 
+	{ "PUBLIC",	TV_PUBLIC },
+	{ "EXTERN",	TV_EXTERN },
+	{ "PROC",	TV_PROC },
+	{ "INCLUDE", TV_INCLUDE },
+
 	{ nullptr,	TV_DONE }
 };
 
@@ -184,6 +196,12 @@ void AsmParser::label()
 		if (lookahead == TV_INTVAL)
 		{
 			sym->ival = yylval.ival;
+			sym->type = stEqu;
+			match();
+		}
+		else if (lookahead == TV_CHARVAL)
+		{
+			sym->ival = yylval.char_val;
 			sym->type = stEqu;
 			match();
 		}
@@ -499,6 +517,16 @@ void AsmParser::imm8(int op)
 //
 //
 //
+void AsmParser::include()
+{
+	match(TV_INCLUDE);
+	m_lexer->pushFile(yylval.sym->lexeme.c_str());
+	match(TV_STRING);
+}
+
+//
+// Parse file-level constructs
+//
 void AsmParser::file()
 {
 	//DoIncludes();
@@ -507,6 +535,18 @@ void AsmParser::file()
 	{
 		switch (lookahead)
 		{
+		case TV_INCLUDE:
+			include();
+			break;
+
+		case TV_EXTERN:
+			match();
+
+			// TODO - mark the symbol as an external reference??
+//			yylval.sym->
+			match();
+			break;
+
 		case TV_ID:
 			label();
 			break;

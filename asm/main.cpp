@@ -13,6 +13,14 @@
 //
 bool g_bDebug = false;
 
+enum
+{
+	stEqu = stUser,
+	stLabel,
+	stDataByte,
+	stDataWord
+};
+
 //
 //
 //
@@ -27,8 +35,10 @@ public:
 
 	int yyparse() override;
 
+	void imm8(int op);
 	void memOperand(int immOp, int memOp);
-	void addressOperand(int op);
+	void dataAddress(int op);
+	void codeAddress(int op);
 	void label();
 	void file();
 	uint8_t reg();
@@ -50,6 +60,7 @@ enum
 	TV_LDA,
 	TV_LDX,
 	TV_STA,
+	TV_STAX,
 	TV_LAX,
 	TV_LEAX,
 
@@ -72,6 +83,7 @@ enum
 	TV_JMP,
 	TV_JNE,
 	TV_JEQ,
+	TV_RTI,
 
 	TV_AND,
 	TV_OR,
@@ -79,7 +91,10 @@ enum
 	TV_NOT,
 
 	TV_PUSH,
-	TV_POP
+	TV_POP,
+
+	TV_PUBLIC,
+	TV_EXTERN
 };
 
 //
@@ -98,31 +113,33 @@ TokenTable _tokenTable[] =
 
 	{ "CMP",	TV_CMP },
 
-	{ "CALL",	TV_CALL},
-	{ "JMP",	TV_JMP},
-	{ "JNE",	TV_JNE},
-	{ "JEQ",	TV_JEQ},
-	{ "RET",	TV_RET},
+	{ "CALL",	TV_CALL },
+	{ "JMP",	TV_JMP },
+	{ "JNE",	TV_JNE },
+	{ "JEQ",	TV_JEQ },
+	{ "RET",	TV_RET },
+	{ "RTI",	TV_RTI },
 
 	{ "ORG",	TV_ORG},
 	{ "EQU",	TV_EQU },
 	{ "DB",		TV_DB},
 	{ "DW",		TV_DW},
 	
-	{ "LDA",	TV_LDA},
-	{ "STA",	TV_STA},
-	{ "LDX",	TV_LDX},
-	{ "LAX",	TV_LAX},
-	{ "LEAX",	TV_LEAX},
+	{ "LDA",	TV_LDA },
+	{ "STA",	TV_STA },
+	{ "STAX",	TV_STAX },
+	{ "LDX",	TV_LDX },
+	{ "LAX",	TV_LAX },
+	{ "LEAX",	TV_LEAX },
 
-	{ "A",		TV_A},
-	{ "X",		TV_X},
-	{ "CC",		TV_CC},
-	{ "SP",		TV_SP},
-	{ "PC",		TV_PC},
+	{ "A",		TV_A },
+	{ "X",		TV_X },
+	{ "CC",		TV_CC },
+	{ "SP",		TV_SP },
+	{ "PC",		TV_PC },
 
-	{ "PUSH",	TV_PUSH},
-	{ "POP",	TV_POP},
+	{ "PUSH",	TV_PUSH },
+	{ "POP",	TV_POP },
 
 	{ nullptr,	TV_DONE }
 };
@@ -155,6 +172,10 @@ void AsmParser::label()
 	case ':':
 		// code address label
 		match();
+		
+		// set the labels value to be its address in the code segment
+		sym->ival = obj.getTextAddress();
+		sym->type = stLabel;
 		break;
 
 	case TV_EQU:
@@ -163,6 +184,7 @@ void AsmParser::label()
 		if (lookahead == TV_INTVAL)
 		{
 			sym->ival = yylval.ival;
+			sym->type = stEqu;
 			match();
 		}
 		break;
@@ -170,6 +192,7 @@ void AsmParser::label()
 	case TV_DB:
 		// data byte
 		match();
+		sym->type = stDataByte;
 
 		// 
 		if (lookahead == TV_INTVAL)
@@ -191,6 +214,7 @@ void AsmParser::label()
 
 		auto val = yylval.ival;
 
+		sym->type = stDataWord;
 		sym->ival = obj.addData(LOBYTE(val));
 		obj.addData(HIBYTE(val));
 
@@ -305,7 +329,7 @@ void AsmParser::memOperand(int immOp, int memOp)
 			RelocationEntry re;
 			re.address	= addr;
 			re.length	= 1;
-			re.index	= SEG_TEXT;
+			re.index	= SEG_DATA;
 			re.external = 0;
 
 			obj.addTextRelocation(re);
@@ -325,11 +349,10 @@ void AsmParser::memOperand(int immOp, int memOp)
 			obj.addText(HIBYTE(val));
 
 			RelocationEntry re;
-			re.address = addr;
-			re.length = 1;
-			re.index = SEG_TEXT;
+			re.address	= addr;
+			re.length	= 1;
+			re.index	= SEG_DATA;
 			re.external = 0;
-
 			obj.addTextRelocation(re);
 		}
 
@@ -346,9 +369,9 @@ void AsmParser::memOperand(int immOp, int memOp)
 }
 
 //
-// Parse a 16b address or label
+// Parse a 16b data address or label
 //
-void AsmParser::addressOperand(int op)
+void AsmParser::dataAddress(int op)
 {
 	obj.addText(op);
 	match();
@@ -363,7 +386,54 @@ void AsmParser::addressOperand(int op)
 		RelocationEntry re;
 		re.address = addr;
 		re.length = 1;
-		// TODO - choose relocation list based on branchTarget (bool)
+		re.index = SEG_DATA;
+		re.external = 0;
+		obj.addTextRelocation(re);
+
+		match();
+	}
+	else if (lookahead == TV_ID)
+	{
+		auto val = yylval.sym->ival;
+
+		auto addr = obj.addText(LOBYTE(val));
+		obj.addText(HIBYTE(val));
+
+		RelocationEntry re;
+		re.address = addr;
+		re.length = 1;
+		re.index = SEG_DATA;
+		re.external = 0;
+		obj.addTextRelocation(re);
+
+		match();
+	}
+	else
+	{
+		yyerror("syntax error");
+	}
+}
+
+//
+// Parse a 16b code address or label
+//
+void AsmParser::codeAddress(int op)
+{
+	obj.addText(op);
+	match();
+
+	if (lookahead == TV_INTVAL)
+	{
+		auto val = yylval.ival;
+
+		auto addr = obj.addText(LOBYTE(val));
+		obj.addText(HIBYTE(val));
+
+		RelocationEntry re;
+		re.address	= addr;
+		re.length	= 1;
+		re.index	= SEG_TEXT;
+		re.external = 0;
 		obj.addTextRelocation(re);
 
 		match();
@@ -376,9 +446,10 @@ void AsmParser::addressOperand(int op)
 		obj.addText(HIBYTE(val));
 
 		RelocationEntry re;
-		re.address = addr;
-		re.length = 1;
-		// TODO - choose relocation list based on branchTarget (bool)
+		re.address	= addr;
+		re.length	= 1;
+		re.index	= SEG_TEXT;
+		re.external = 0;
 		obj.addTextRelocation(re);
 
 		match();
@@ -386,6 +457,42 @@ void AsmParser::addressOperand(int op)
 	else 
 	{
 		yyerror("syntax error");
+	}
+}
+
+//
+//
+//
+void AsmParser::imm8(int op)
+{
+	obj.addText(op);
+	match();
+
+	// TODO - get/emit the imm8 parameter
+	if (lookahead == TV_INTVAL)
+	{
+		auto val = yylval.ival;
+		obj.addText(LOBYTE(val));
+		match();
+	}
+	else if (lookahead == TV_CHARVAL)
+	{
+		auto val = yylval.char_val;
+		obj.addText(val);
+		match();
+	}
+	else if (lookahead == TV_ID)
+	{
+		if (yylval.sym->type != stEqu)
+			yyerror("EQU expected!");
+
+		auto val = yylval.sym->ival;
+		obj.addText(LOBYTE(val));
+		match();
+	}
+	else
+	{
+		yyerror("invalid operand!");
 	}
 }
 
@@ -407,7 +514,6 @@ void AsmParser::file()
 		case TV_NOP:
 			obj.addText(OP_NOP);
 			match();
-
 			break;
 
 		case TV_ADD:
@@ -443,36 +549,25 @@ void AsmParser::file()
 			break;
 
 		case TV_STA:
-			addressOperand(OP_STA);
+			dataAddress(OP_STA);
 			break;
 
 		case TV_LDX:
 			memOperand(OP_LDXI, OP_LDX);
 			break;
 		
+		case TV_STAX:
+			obj.addText(OP_STAX);
+			match();
+			break;
+
 		case TV_LAX:
 			obj.addText(OP_LAX);
 			match();
 			break;
 
 		case TV_LEAX:
-			obj.addText(OP_LEAX);
-			match();
-
-			i = 
-			// TODO - get/emit the imm8 parameter
-			if (lookahead == TV_INTVAL)
-			{
-
-			}
-			else if (lookahead == TV_CHARVAL)
-			{
-
-			}
-			else
-			{
-				yyerror("invalid operand!");
-			}
+			imm8(OP_LEAX);
 			break;
 
 		case TV_PUSH:
@@ -490,37 +585,29 @@ void AsmParser::file()
 			break;
 
 		case TV_JMP:
-			obj.addText(OP_JMP);
-			match();
-
-			address();
+			codeAddress(OP_JMP);
 			break;
 
 		case TV_JNE:
-			obj.addText(OP_JNE);
-			match();
-
-			address();
+			codeAddress(OP_JNE);
 			break;
 
 		case TV_JEQ:
-			obj.addText(OP_JEQ);
-			match();
-
-			address();
+			codeAddress(OP_JEQ);
 			break;
 
 		case TV_CALL:
-			obj.addText(OP_CALL);
-			match();
-
-			address();
+			codeAddress(OP_CALL);
 			break;
 
 		case TV_RET:
 			obj.addText(OP_RET);
 			match();
+			break;
 
+		case TV_RTI:
+			obj.addText(OP_RTI);
+			match();
 			break;
 
 		default:

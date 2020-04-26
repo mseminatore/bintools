@@ -160,8 +160,8 @@ void AoutFile::dumpHeader(FILE *f)
 	fprintf(f, " BSS Segment size: 0x%04X (%d) bytes\n", file_header.a_bss, file_header.a_bss);
 	fprintf(f, "Symbol Table size: 0x%04X (%d) bytes\n", file_header.a_syms, file_header.a_syms);
 	fprintf(f, " Main Entry Point: 0x%04X\n", file_header.a_entry);
-	fprintf(f, " Text reloc count: 0x%X (%d)\n", file_header.a_trsize, file_header.a_trsize);
-	fprintf(f, " Data reloc count: 0x%X (%d)\n\n", file_header.a_drsize, file_header.a_drsize);
+	fprintf(f, " Text reloc count: 0x%04X (%d) entries\n", file_header.a_trsize, file_header.a_trsize);
+	fprintf(f, " Data reloc count: 0x%04X (%d) entries\n\n", file_header.a_drsize, file_header.a_drsize);
 }
 
 //
@@ -267,7 +267,7 @@ void AoutFile::dumpTextRelocs(FILE *f)
 	for (;iter != textRelocs.end(); iter++)
 	{
 		auto re = *iter;
-		fprintf(f, "address: 0x%04X, external: %d, size: %d\n", re.address, re.external, re.length);
+		fprintf(f, "address: 0x%04X, external: %d, size: %d\n", re.address, re.external, 1 << re.length);
 	}
 
 	fputc('\n', f);
@@ -286,7 +286,7 @@ void AoutFile::dumpDataRelocs(FILE *f)
 	for (; iter != dataRelocs.end(); iter++)
 	{
 		auto re = *iter;
-		fprintf(f, "address: 0x%04X, external: %d, size: %d\n", re.address, re.external, re.length);
+		fprintf(f, "address: 0x%04X, external: %d, size: %d\n", re.address, re.external, 1 << re.length);
 	}
 
 	fputc('\n', f);

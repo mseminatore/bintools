@@ -10,18 +10,21 @@ enum
 	// arithmetic
 	OP_ADD,	OP_ADDI,
 	OP_SUB,	OP_SUBI,
-	OP_INC,
-	OP_DEC,
+	//OP_INC,
+	//OP_DEC,
 
 	// logical
 	OP_AND, OP_ANDI,
 	OP_OR, OP_ORI,
 	OP_NOT, OP_NOTI,
 	OP_XOR, OP_XORI,
+	//OP_ROL, OP_ROR,
+	//OP_SHL, OP_SHR,
 
 	// branching
 	OP_CALL,
 	OP_RET,
+	OP_RTI,
 	OP_JMP,
 	OP_JNE,
 	OP_JEQ,
@@ -34,6 +37,7 @@ enum
 	OP_LEAX,
 	OP_LAX,
 	OP_STA,
+	OP_STAX,
 
 	// stack
 	OP_PUSH,

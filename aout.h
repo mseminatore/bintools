@@ -102,6 +102,8 @@ public:
 	uint32_t addText(uint8_t item);
 	uint32_t addData(uint8_t item);
 	uint32_t allocBSS(size_t size);
+	uint32_t getTextAddress() { return text_segment.size(); }
+	uint32_t getDataAddress() { return data_segment.size(); }
 
 	// symbols
 	void addSymbol(const std::string &name, const SymbolEntity &sym);

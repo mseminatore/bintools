@@ -106,7 +106,7 @@ public:
 	uint32_t getDataAddress() { return data_segment.size(); }
 
 	// symbols
-	void addSymbol(const std::string &name, const SymbolEntity &sym);
+	void addSymbol(const std::string &name, SymbolEntity &sym);
 	uint32_t addString(const std::string &name);
 
 	// relocations

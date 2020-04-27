@@ -27,6 +27,7 @@ int AoutFile::writeFile(FILE *fptr)
 	file_header.a_data = data_segment.size();
 	file_header.a_trsize = textRelocs.size();
 	file_header.a_drsize = dataRelocs.size();
+	file_header.a_syms = symbolTable.size();
 
 	// write the header
 	auto result = fwrite(&file_header, sizeof(file_header), 1, fptr);
@@ -50,7 +51,17 @@ int AoutFile::writeFile(FILE *fptr)
 	}
 
 	// write the symbol table
+	for (auto iter = symbolTable.begin(); iter != symbolTable.end(); iter++)
+	{
+		auto se = (*iter).second;
+		fwrite(&se, sizeof(se), 1, fptr);
+	}
+
 	// write the string table
+	for (size_t i = 0; i < stringTable.size(); i++)
+	{
+		fputc(stringTable[i], fptr);
+	}
 
 	return 0;
 }
@@ -97,7 +108,29 @@ int AoutFile::readFile(FILE *fptr)
 	}
 
 	// read the symbol table
+	std::vector<SymbolEntity> st;
+	for (int i = 0; i < file_header.a_syms; i++)
+	{
+		SymbolEntity se;
+		fread(&se, sizeof(se), 1, fptr);
+		st.push_back(se);
+	}
+
 	// read the string table
+	char c = fgetc(fptr);
+	while (c != EOF)
+	{
+		stringTable.push_back(c);
+		c = fgetc(fptr);
+	}
+
+	for (int i = 0; i < file_header.a_syms; i++)
+	{
+		auto sym = st[i];
+		char *pStr = &(stringTable[sym.nameOffset]);
+		symbolTable.insert(SymbolTable::value_type(pStr, sym));
+	}
+
 	return 0;
 }
 
@@ -112,29 +145,41 @@ uint32_t AoutFile::allocBSS(size_t size)
 uint32_t AoutFile::addText(uint8_t item)
 {
 	uint32_t addr = text_segment.size();
-	
-	text_segment.push_back(item);
-	
+		text_segment.push_back(item);
 	return addr;
 }
 
 uint32_t AoutFile::addData(uint8_t item)
 {
 	uint32_t addr = data_segment.size();
-
-	data_segment.push_back(item);
-
+		data_segment.push_back(item);
 	return addr;
 }
 
-void AoutFile::addSymbol(const std::string &name, const SymbolEntity &sym)
+void AoutFile::addSymbol(const std::string &name, SymbolEntity &sym)
 {
+	auto it = symbolTable.find(name);
+
+	// return if symbol already exists
+	if (it != symbolTable.end())
+		return;
+
+	uint32_t offset = addString(name);
+	sym.nameOffset = offset;
+
 	symbolTable.insert(SymbolTable::value_type(name, sym));
 }
 
 uint32_t AoutFile::addString(const std::string &name)
 {
 	uint32_t offset = stringTable.size();
+
+	for (size_t i = 0; i < name.size(); i++)
+		stringTable.push_back(name[i]);
+
+	// make it asciiz
+	stringTable.push_back(0);
+
 	return offset;
 }
 

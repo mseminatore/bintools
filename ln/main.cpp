@@ -47,7 +47,9 @@ int main(int argc, char* argv[])
 	{
 		AoutFile *pObj = new AoutFile();
 		FILE *f = fopen(argv[i], "rb");
-		pObj->readFile(f);
+			pObj->readFile(f);
+		fclose(f);
+
 		files.push_back(pObj);
 	}
 

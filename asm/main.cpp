@@ -12,6 +12,7 @@
 // Command line switches
 //
 bool g_bDebug = false;
+char *g_szOutputFilename = "a.out";
 
 enum
 {
@@ -155,6 +156,36 @@ TokenTable _tokenTable[] =
 
 	{ nullptr,	TV_DONE }
 };
+
+//
+// show usage
+//
+void usage()
+{
+	printf("usage: asm [options] filename\n");
+	exit(0);
+}
+
+//
+// get options from the command line
+//
+int getopt(int n, char *args[])
+{
+	int i;
+	for (i = 1; args[i][0] == '-'; i++)
+	{
+		if (args[i][1] == 'v')
+			g_bDebug = true;
+
+		if (args[i][1] == 'o')
+		{
+			g_szOutputFilename = args[i + 1];
+			i++;
+		}
+	}
+
+	return i;
+}
 
 //
 //
@@ -486,7 +517,6 @@ void AsmParser::imm8(int op)
 	obj.addText(op);
 	match();
 
-	// TODO - get/emit the imm8 parameter
 	if (lookahead == TV_INTVAL)
 	{
 		auto val = yylval.ival;
@@ -545,6 +575,15 @@ void AsmParser::file()
 			// TODO - mark the symbol as an external reference??
 //			yylval.sym->
 			match();
+			break;
+
+		case TV_PROC:
+			match();
+
+			yylval.sym->type = stProc;
+			yylval.sym->global = true;
+			match();
+
 			break;
 
 		case TV_ID:
@@ -680,36 +719,22 @@ int AsmParser::yyparse()
 	//if (yydebug)
 	//	root.dumpAll();
 
-	writeFile("a.out");
+	m_pSymbolTable->dumpContents();
 
-	return 0;
-}
+	// update symbols
+	auto sym = m_pSymbolTable->getFirstGlobal();
 
-//
-// show usage
-//
-void usage()
-{
-	printf("usage: asm [options] filename\n");
-	exit(0);
-}
-
-//
-// get options from the command line
-//
-int getopt(int n, char *args[])
-{
-	int i;
-	for (i = 1; args[i][0] == '-'; i++)
+	while (sym)
 	{
-		if (args[i][1] == 'v')
-			g_bDebug = true;
-
-		//if (args[i][1] == 'o')
-		//	g_bDebug = true;
+		SymbolEntity se;
+		obj.addSymbol(sym->lexeme, se);
+		
+		sym = m_pSymbolTable->getNextGlobal();
 	}
 
-	return i;
+	writeFile(g_szOutputFilename);
+
+	return 0;
 }
 
 //

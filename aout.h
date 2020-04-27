@@ -104,6 +104,9 @@ public:
 	uint32_t allocBSS(size_t size);
 	uint32_t getTextAddress() { return text_segment.size(); }
 	uint32_t getDataAddress() { return data_segment.size(); }
+	
+	uint8_t *textPtr() { return text_segment.data(); }
+	uint8_t *dataPtr() { return data_segment.data(); }
 
 	// symbols
 	void addSymbol(const std::string &name, SymbolEntity &sym);

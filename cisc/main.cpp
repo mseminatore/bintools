@@ -168,6 +168,32 @@ void Cisc::exec()
 		break;
 
 	case OP_JMP:
+		PC = getAddress();
+		break;
+
+	case OP_PUSH:
+		operand = fetch();
+		if (operand & REG_A)
+			push(A);
+		if (operand & REG_CC)
+			push(CC);
+		if (operand & REG_X)
+		{
+			push(LOBYTE(X));
+			push(HIBYTE(X));
+		}
+		break;
+
+	case OP_POP:
+		operand = fetch();
+		if (operand & REG_X)
+		{
+			X = (pop() << 8) | pop();
+		}
+		if (operand & REG_CC)
+			CC = pop();
+		if (operand & REG_A)
+			A = pop();
 		break;
 
 	default:
@@ -241,6 +267,9 @@ int getopt(int n, char *args[])
 //
 int main(int argc, char* argv[])
 {
+	bool done = false;
+	char buf[256];
+
 	if (argc == 1)
 		usage();
 
@@ -250,8 +279,6 @@ int main(int argc, char* argv[])
 
 	cpu.load(argv[iFirstArg]);
 
-	bool done = false;
-	char buf[256];
 	while (!done)
 	{
 		printf(">");

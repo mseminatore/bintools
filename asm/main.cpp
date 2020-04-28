@@ -5,9 +5,6 @@
 #include <stdio.h>
 #include "./ParserKit/baseparser.h"
 
-#define LOBYTE(val) ((val) & 0xFF)
-#define HIBYTE(val) (((val) & 0xFF00) >> 8)
-
 //
 // Command line switches
 //
@@ -19,6 +16,7 @@ enum
 	stEqu = stUser,
 	stLabel,
 	stProc,
+	stExternal,
 	stDataByte,
 	stDataWord
 };
@@ -30,6 +28,12 @@ class AsmParser : public BaseParser
 {
 protected:
 	AoutFile obj;
+	using AddressList = std::vector<uint16_t>;
+	using Fixups = std::map<std::string, AddressList>;
+	Fixups fixups;
+
+	void addFixup(const std::string &str, uint16_t addr);
+	void applyFixups(const std::string &str, uint16_t addr);
 
 public:
 	AsmParser();
@@ -464,6 +468,47 @@ void AsmParser::dataAddress(int op)
 }
 
 //
+//
+//
+void AsmParser::applyFixups(const std::string &str, uint16_t addr)
+{
+	auto iter = fixups.find(str);
+
+	// if there were no forward refs there will be no fixups
+	if (iter == fixups.end())
+		return;
+
+	for (auto i = iter->second.begin(); i != iter->second.end(); i++)
+	{
+		auto loc = *i;
+		auto rom = obj.textPtr();
+		rom[loc] = addr & 0xFF;
+		rom[loc+1] = addr >> 8;
+	}
+
+	// we are done with these fixups!
+	fixups.erase(iter);
+}
+
+//
+//
+//
+void AsmParser::addFixup(const std::string &str, uint16_t addr)
+{
+	auto iter = fixups.find(str);
+	if (iter != fixups.end())
+	{
+		iter->second.push_back(addr);
+	}
+	else
+	{
+		AddressList list;
+		list.push_back(addr);
+		fixups.insert(Fixups::value_type(str, list));
+	}
+}
+
+//
 // Parse a 16b code address or label
 //
 void AsmParser::codeAddress(int op)
@@ -493,6 +538,10 @@ void AsmParser::codeAddress(int op)
 
 		auto addr = obj.addText(LOBYTE(val));
 		obj.addText(HIBYTE(val));
+
+		// see if we have to fixup this address
+		if (yylval.sym->type == stUndef)
+			addFixup(yylval.sym->lexeme, addr);
 
 		RelocationEntry re;
 		re.address	= addr;
@@ -573,7 +622,7 @@ void AsmParser::file()
 			match();
 
 			// TODO - mark the symbol as an external reference??
-//			yylval.sym->
+			yylval.sym->type = stExternal;
 			match();
 			break;
 
@@ -582,6 +631,7 @@ void AsmParser::file()
 
 			yylval.sym->type = stProc;
 			yylval.sym->global = true;
+			applyFixups(yylval.sym->lexeme, obj.getTextAddress());
 			match();
 
 			break;

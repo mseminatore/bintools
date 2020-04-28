@@ -43,7 +43,9 @@ public:
 
 
 	void imm8(int op);
-	void memOperand(int immOp, int memOp);
+	void imm16(int op);
+
+	void memOperand(int immOp, int memOp, bool isWordValue = false);
 	void dataAddress(int op);
 	void codeAddress(int op);
 
@@ -339,7 +341,7 @@ uint8_t AsmParser::regSet()
 //
 // an 8b immediate value or an address
 //
-void AsmParser::memOperand(int immOp, int memOp)
+void AsmParser::memOperand(int immOp, int memOp, bool isWordValue)
 {
 	bool isAddrOperand = false;
 
@@ -362,6 +364,8 @@ void AsmParser::memOperand(int immOp, int memOp)
 	{
 		if (isAddrOperand)
 			yyerror("character literal not allowed!");
+		if (isWordValue)
+			yyerror("word value expected!");
 
 		auto val = yylval.char_val;
 
@@ -375,17 +379,20 @@ void AsmParser::memOperand(int immOp, int memOp)
 		auto val = yylval.ival;
 
 		auto addr = obj.addText(LOBYTE(val));
-		if (isAddrOperand)
+		if (isAddrOperand || isWordValue)
 		{
 			obj.addText(HIBYTE(val));
 
-			RelocationEntry re;
-			re.address	= addr;
-			re.length	= 1;
-			re.index	= SEG_DATA;
-			re.external = 0;
+			if (isAddrOperand)
+			{
+				RelocationEntry re;
+				re.address = addr;
+				re.length = 1;
+				re.index = SEG_DATA;
+				re.external = 0;
 
-			obj.addTextRelocation(re);
+				obj.addTextRelocation(re);
+			}
 		}
 
 		match();
@@ -397,16 +404,20 @@ void AsmParser::memOperand(int immOp, int memOp)
 		auto val = yylval.sym->ival;
 
 		auto addr = obj.addText(LOBYTE(val));
-		if (isAddrOperand)
+		if (isAddrOperand || isWordValue)
 		{
 			obj.addText(HIBYTE(val));
 
-			RelocationEntry re;
-			re.address	= addr;
-			re.length	= 1;
-			re.index	= SEG_DATA;
-			re.external = 0;
-			obj.addTextRelocation(re);
+			if (isAddrOperand)
+			{
+				RelocationEntry re;
+				re.address = addr;
+				re.length = 1;
+				re.index = SEG_DATA;
+				re.external = 0;
+				
+				obj.addTextRelocation(re);
+			}
 		}
 
 		match();
@@ -561,6 +572,37 @@ void AsmParser::codeAddress(int op)
 //
 //
 //
+void AsmParser::imm16(int op)
+{
+	obj.addText(op);
+	match();
+
+	if (lookahead == TV_INTVAL)
+	{
+		auto val = yylval.ival;
+		obj.addText(LOBYTE(val));
+		obj.addText(HIBYTE(val));
+		match();
+	}
+	else if (lookahead == TV_ID)
+	{
+		if (yylval.sym->type != stEqu)
+			yyerror("EQU expected!");
+
+		auto val = yylval.sym->ival;
+		obj.addText(LOBYTE(val));
+		obj.addText(HIBYTE(val));
+		match();
+	}
+	else
+	{
+		yyerror("invalid operand!");
+	}
+}
+
+//
+//
+//
 void AsmParser::imm8(int op)
 {
 	obj.addText(op);
@@ -682,7 +724,7 @@ void AsmParser::file()
 			break;
 
 		case TV_LDX:
-			memOperand(OP_LDXI, OP_LDX);
+			memOperand(OP_LDXI, OP_LDX, true);
 			break;
 		
 		case TV_STAX:
@@ -696,7 +738,7 @@ void AsmParser::file()
 			break;
 
 		case TV_LEAX:
-			imm8(OP_LEAX);
+			imm16(OP_LEAX);
 			break;
 
 		case TV_PUSH:

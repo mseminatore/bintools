@@ -36,7 +36,7 @@ public:
 	void push(uint8_t val);
 	uint8_t pop();
 	void panic();
-	uint16_t getAddress();
+	uint16_t getWord();
 	uint8_t fetch();
 	void decode();
 	void exec();
@@ -72,14 +72,14 @@ void Cisc::load(const std::string &filename)
 //
 //
 //
-uint16_t Cisc::getAddress()
+uint16_t Cisc::getWord()
 {
-	uint16_t address;
+	uint16_t word;
 
-	address = fetch();
-	address |= (fetch() << 8);
+	word = fetch();
+	word |= (fetch() << 8);
 
-	return address;
+	return word;
 }
 
 //
@@ -106,6 +106,7 @@ uint8_t Cisc::pop()
 void Cisc::exec()
 {
 	uint8_t operand;
+	uint16_t addr;
 
 	switch (opcode)
 	{
@@ -113,7 +114,7 @@ void Cisc::exec()
 		break;
 
 	case OP_ADD:
-		A = A + ram[getAddress()];
+		A = A + ram[getWord()];
 		break;
 
 	case OP_ADDI:
@@ -122,7 +123,7 @@ void Cisc::exec()
 		break;
 
 	case OP_SUB:
-		A = A - ram[getAddress()];
+		A = A - ram[getWord()];
 		break;
 
 	case OP_SUBI:
@@ -131,7 +132,7 @@ void Cisc::exec()
 		break;
 
 	case OP_AND:
-		A = A & ram[getAddress()];
+		A = A & ram[getWord()];
 		break;
 	
 	case OP_ANDI:
@@ -140,7 +141,7 @@ void Cisc::exec()
 		break;
 
 	case OP_OR:
-		A = A | ram[getAddress()];
+		A = A | ram[getWord()];
 		break;
 
 	case OP_ORI:
@@ -149,7 +150,7 @@ void Cisc::exec()
 		break;
 
 	case OP_XOR:
-		A = A % ram[getAddress()];
+		A = A % ram[getWord()];
 		break;
 
 	case OP_XORI:
@@ -160,7 +161,7 @@ void Cisc::exec()
 	case OP_CALL:
 		push(LOBYTE(PC));
 		push(HIBYTE(PC));
-		PC = getAddress();
+		PC = getWord();
 		break;
 	
 	case OP_RET:
@@ -168,7 +169,32 @@ void Cisc::exec()
 		break;
 
 	case OP_JMP:
-		PC = getAddress();
+		PC = getWord();
+		break;
+
+	case OP_LAX:
+		A = ram[X];
+		break;
+
+	case OP_LDA:
+		A = ram[getWord()];
+		break;
+
+	case OP_LDAI:
+		A = fetch();
+		break;
+
+	case OP_LDX:
+		X = ram[getWord()];
+		break;
+
+	case OP_LDXI:
+		X = getWord();
+		break;
+
+	case OP_LEAX:
+		operand = fetch();
+		X = X + operand;
 		break;
 
 	case OP_PUSH:
@@ -182,10 +208,29 @@ void Cisc::exec()
 			push(LOBYTE(X));
 			push(HIBYTE(X));
 		}
+		if (operand & REG_SP)
+		{
+			addr = SP;
+			push(LOBYTE(addr));
+			push(HIBYTE(addr));
+		}
+		if (operand & REG_PC)
+		{
+			push(LOBYTE(PC));
+			push(HIBYTE(PC));
+		}
 		break;
 
 	case OP_POP:
 		operand = fetch();
+		if (operand & REG_PC)
+		{
+			PC = (pop() << 8) | pop();
+		}
+		if (operand & REG_SP)
+		{
+			SP = (pop() << 8) | pop();
+		}
 		if (operand & REG_X)
 		{
 			X = (pop() << 8) | pop();

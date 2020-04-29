@@ -3,6 +3,7 @@
 #include "../aout.h"
 #include "../cpu_cisc.h"
 #include <stdio.h>
+#include <stdarg.h>
 
 //
 //
@@ -17,6 +18,9 @@ protected:
 	uint8_t rom[0xFFFF];
 
 	uint8_t opcode;
+	static const int SMALL_BUFFER = 256;
+
+	void log(const char *fmt, ...);
 
 public:
 	Cisc() {
@@ -101,75 +105,115 @@ uint8_t Cisc::pop()
 }
 
 //
+//
+//
+void Cisc::log(const char *fmt, ...)
+{
+	char buf[SMALL_BUFFER];
+	va_list argptr;
+
+	va_start(argptr, fmt);
+		vsprintf(buf, fmt, argptr);
+	va_end(argptr);
+
+	printf("\n%s\n", buf);
+}
+
+//
 // TODO - update flags (CC)
 //
 void Cisc::exec()
 {
 	uint8_t operand;
-	uint16_t addr;
+	uint16_t addr, temp16;
 
 	switch (opcode)
 	{
 	case OP_NOP:
+		log("NOP");
 		break;
 
 	case OP_ADD:
-		A = A + ram[getWord()];
+		addr = getWord();
+		temp16 = A + ram[addr];
+//		CC |= (temp16 & 0xFF00) ? FLAG_C : 0;
+		A = temp16 & 0xFF;
+//		CC |= A ? FLAG_Z : 0;
+		log("ADD [0x%X]", addr);
 		break;
 
 	case OP_ADDI:
 		operand = fetch();
-		A = A + operand;
+		temp16 = A + operand;
+//		CC |= (temp16 & 0xFF00) ? FLAG_C : 0;
+		A = temp16 & 0xFF;
+//		CC |= A ? 0 : FLAG_Z;
+		log("ADD %d", operand);
 		break;
 
 	case OP_SUB:
-		A = A - ram[getWord()];
+		addr = getWord();
+		A = A - ram[addr];
+		log("SUB [0x%X]", addr);
 		break;
 
 	case OP_SUBI:
 		operand = fetch();
 		A = A - operand;
+		log("SUB %d", operand);
 		break;
 
 	case OP_AND:
-		A = A & ram[getWord()];
+		addr = getWord();
+		A = A & ram[addr];
+		log("AND [0x%X]", addr);
 		break;
 	
 	case OP_ANDI:
 		operand = fetch();
 		A = A & operand;
+		log("AND %d", operand);
 		break;
 
 	case OP_OR:
-		A = A | ram[getWord()];
+		addr = getWord();
+		A = A | ram[addr];
+		log("OR [0x%X]", addr);
 		break;
 
 	case OP_ORI:
 		operand = fetch();
 		A = A | operand;
+		log("OR %d", operand);
 		break;
 
 	case OP_XOR:
-		A = A % ram[getWord()];
+		addr = getWord();
+		A = A % ram[addr];
+		log("XOR [0x%X]", addr);
 		break;
 
 	case OP_XORI:
 		operand = fetch();
 		A = A % operand;
+		log("XOR %d", operand);
 		break;
 
 	case OP_CALL:
 		push(LOBYTE(PC));
 		push(HIBYTE(PC));
 		PC = getWord();
+		log("CALL 0x%X", PC);
 		break;
 	
 	case OP_RET:
 		PC = (pop() << 8) | pop();
+		log("RET");
 		break;
 
 	case OP_JMP:
 		PC = getWord();
+		log("JMP 0x%X", PC);
 		break;
 
 	case OP_LAX:

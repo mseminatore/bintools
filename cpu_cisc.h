@@ -6,6 +6,14 @@
 #define LOBYTE(val) ((val) & 0xFF)
 #define HIBYTE(val) (((val) & 0xFF00) >> 8)
 
+//
+// Memory map
+//
+#define RAM_END 0xFF00
+#define RESET_VECTOR 0xFFFE
+#define INT_VECTOR 0xFFFC
+#define SWI_VECTOR 0xFFFA
+
 enum
 {
 	OP_NOP,
@@ -61,9 +69,11 @@ enum
 
 enum
 {
-	FLAG_Z = 1,
-	FLAG_C = 2,
-	FLAG_I = 4
+	FLAG_C = 1,
+	FLAG_Z = 2,
+	FLAG_V = 4,
+	FLAG_N = 8,
+	FLAG_I = 16,
 };
 
 #endif __CPU_CISC_H

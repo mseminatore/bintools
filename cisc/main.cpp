@@ -22,6 +22,10 @@ protected:
 
 	void log(const char *fmt, ...);
 
+	void pushRegs();
+
+	void popRegs();
+
 public:
 	Cisc() {
 		reset();
@@ -34,18 +38,20 @@ public:
 	{ 
 		A = CC = opcode = 0; 
 		PC = X = 0;
-		SP = 0xFFFF;
+		SP = RAM_END;
 	}
 
 	void push(uint8_t val);
 	uint8_t pop();
+	void getRegisterList(uint8_t operand, std::string&);
 	void panic();
-	uint16_t getWord();
+	uint16_t fetchW();
 	uint8_t fetch();
 	void decode();
+	void updateFlag(bool result, uint8_t flag);
 	void exec();
 	void tick();
-	void registers()
+	void printRegisters()
 	{
 		printf("A = %02X X = %04X CC = %02X SP = %04X PC = %04X\n", A, X, CC, SP, PC);
 	}
@@ -76,19 +82,6 @@ void Cisc::load(const std::string &filename)
 //
 //
 //
-uint16_t Cisc::getWord()
-{
-	uint16_t word;
-
-	word = fetch();
-	word |= (fetch() << 8);
-
-	return word;
-}
-
-//
-//
-//
 void Cisc::push(uint8_t val)
 {
 	SP--;
@@ -102,6 +95,20 @@ uint8_t Cisc::pop()
 {
 	uint8_t val = ram[SP++];
 	return val;
+}
+
+void Cisc::getRegisterList(uint8_t operand, std::string &str)
+{
+	if (operand & REG_A)
+		str = "A";
+	if (operand & REG_X)
+		str += ", X";
+	if (operand & REG_CC)
+		str += ", CC";
+	if (operand & REG_SP)
+		str += ", SP";
+	if (operand & REG_PC)
+		str += ", PC";
 }
 
 //
@@ -120,6 +127,92 @@ void Cisc::log(const char *fmt, ...)
 }
 
 //
+//
+//
+void Cisc::pushRegs()
+{
+	uint8_t operand = fetch();
+	uint16_t addr;
+
+	if (operand & REG_PC)
+	{
+		push(LOBYTE(PC));
+		push(HIBYTE(PC));
+	}
+
+	if (operand & REG_SP)
+	{
+		addr = SP;
+		push(LOBYTE(addr));
+		push(HIBYTE(addr));
+	}
+
+	if (operand & REG_X)
+	{
+		push(LOBYTE(X));
+		push(HIBYTE(X));
+	}
+
+	if (operand & REG_A)
+		push(A);
+
+	if (operand & REG_CC)
+		push(CC);
+
+	std::string s;
+	getRegisterList(operand, s);
+	log("PUSH %s", s.c_str());
+}
+
+//
+//
+//
+void Cisc::popRegs()
+{
+	uint8_t operand = fetch();
+	uint16_t addr;
+
+	if (operand & REG_CC)
+		CC = pop();
+
+	if (operand & REG_A)
+		A = pop();
+
+	if (operand & REG_X)
+	{
+		X = (pop() << 8) | pop();
+	}
+
+	if (operand & REG_SP)
+	{
+		SP = (pop() << 8) | pop();
+	}
+
+	if (operand & REG_PC)
+	{
+		PC = (pop() << 8) | pop();
+	}
+
+	std::string s;
+	getRegisterList(operand, s);
+	log("POP %s", s.c_str());
+}
+
+#define SETF(flag) (CC |= flag)
+#define CLRF(flag) (CC &= ~flag)
+
+//
+//
+//
+void Cisc::updateFlag(bool result, uint8_t flag)
+{
+	if (result)
+		SETF(flag);
+	else
+		CLRF(flag);
+}
+
+//
 // TODO - update flags (CC)
 //
 void Cisc::exec()
@@ -134,37 +227,63 @@ void Cisc::exec()
 		break;
 
 	case OP_ADD:
-		addr = getWord();
+		addr = fetchW();
 		temp16 = A + ram[addr];
-//		CC |= (temp16 & 0xFF00) ? FLAG_C : 0;
+
+		updateFlag(temp16 & 0xFF00, FLAG_C);
+		updateFlag(temp16 == 0, FLAG_Z);
+		updateFlag(temp16 & 0x80, FLAG_N);
+		updateFlag(temp16 & 0xFF00, FLAG_V);
+
 		A = temp16 & 0xFF;
-//		CC |= A ? FLAG_Z : 0;
+		
 		log("ADD [0x%X]", addr);
 		break;
 
 	case OP_ADDI:
 		operand = fetch();
 		temp16 = A + operand;
-//		CC |= (temp16 & 0xFF00) ? FLAG_C : 0;
+
+		updateFlag(temp16 & 0xFF00, FLAG_C);
+		updateFlag(temp16 == 0, FLAG_Z);
+		updateFlag(temp16 & 0x80, FLAG_N);
+		updateFlag(temp16 & 0xFF00, FLAG_V);
+
 		A = temp16 & 0xFF;
-//		CC |= A ? 0 : FLAG_Z;
+
 		log("ADD %d", operand);
 		break;
 
 	case OP_SUB:
-		addr = getWord();
-		A = A - ram[addr];
+		addr = fetchW();
+		temp16 = A - ram[addr];
+
+		updateFlag(temp16 & 0xFF00, FLAG_C);
+		updateFlag(temp16 == 0, FLAG_Z);
+		updateFlag(temp16 & 0x80, FLAG_N);
+		updateFlag(temp16 & 0xFF00, FLAG_V);
+
+		A = temp16 & 0xFF;
+
 		log("SUB [0x%X]", addr);
 		break;
 
 	case OP_SUBI:
 		operand = fetch();
-		A = A - operand;
+		temp16 = A - operand;
+
+		updateFlag(temp16 & 0xFF00, FLAG_C);
+		updateFlag(temp16 == 0, FLAG_Z);
+		updateFlag(temp16 & 0x80, FLAG_N);
+		updateFlag(temp16 & 0xFF00, FLAG_V);
+
+		A = temp16 & 0xFF;
+
 		log("SUB %d", operand);
 		break;
 
 	case OP_AND:
-		addr = getWord();
+		addr = fetchW();
 		A = A & ram[addr];
 		log("AND [0x%X]", addr);
 		break;
@@ -176,7 +295,7 @@ void Cisc::exec()
 		break;
 
 	case OP_OR:
-		addr = getWord();
+		addr = fetchW();
 		A = A | ram[addr];
 		log("OR [0x%X]", addr);
 		break;
@@ -188,7 +307,7 @@ void Cisc::exec()
 		break;
 
 	case OP_XOR:
-		addr = getWord();
+		addr = fetchW();
 		A = A % ram[addr];
 		log("XOR [0x%X]", addr);
 		break;
@@ -200,9 +319,12 @@ void Cisc::exec()
 		break;
 
 	case OP_CALL:
+		addr = fetchW();
+
 		push(LOBYTE(PC));
 		push(HIBYTE(PC));
-		PC = getWord();
+
+		PC = addr;
 		log("CALL 0x%X", PC);
 		break;
 	
@@ -212,77 +334,58 @@ void Cisc::exec()
 		break;
 
 	case OP_JMP:
-		PC = getWord();
+		PC = fetchW();
 		log("JMP 0x%X", PC);
+		break;
+
+	case OP_JNE:
+		addr = fetchW();
+		if (!(CC & FLAG_Z))
+			PC = addr;
+
+		log("JNE 0x%X", addr);
 		break;
 
 	case OP_LAX:
 		A = ram[X];
+		log("LAX");
 		break;
 
 	case OP_LDA:
-		A = ram[getWord()];
+		addr = fetchW();
+		A = ram[addr];
+		log("LDA [0x%X]", addr);
 		break;
 
 	case OP_LDAI:
-		A = fetch();
+		operand = fetch();
+		A = operand;
+		log("LDA %d", operand);
 		break;
 
 	case OP_LDX:
-		X = ram[getWord()];
+		addr = fetchW();
+		X = ram[addr];
+		log("LDX [0x%X]", addr);
 		break;
 
 	case OP_LDXI:
-		X = getWord();
+		X = fetchW();
+		log("LDX %d", X);
 		break;
 
 	case OP_LEAX:
 		operand = fetch();
 		X = X + operand;
+		log("LEAX %d", operand);
 		break;
 
 	case OP_PUSH:
-		operand = fetch();
-		if (operand & REG_A)
-			push(A);
-		if (operand & REG_CC)
-			push(CC);
-		if (operand & REG_X)
-		{
-			push(LOBYTE(X));
-			push(HIBYTE(X));
-		}
-		if (operand & REG_SP)
-		{
-			addr = SP;
-			push(LOBYTE(addr));
-			push(HIBYTE(addr));
-		}
-		if (operand & REG_PC)
-		{
-			push(LOBYTE(PC));
-			push(HIBYTE(PC));
-		}
+		pushRegs();
 		break;
 
 	case OP_POP:
-		operand = fetch();
-		if (operand & REG_PC)
-		{
-			PC = (pop() << 8) | pop();
-		}
-		if (operand & REG_SP)
-		{
-			SP = (pop() << 8) | pop();
-		}
-		if (operand & REG_X)
-		{
-			X = (pop() << 8) | pop();
-		}
-		if (operand & REG_CC)
-			CC = pop();
-		if (operand & REG_A)
-			A = pop();
+		popRegs();
 		break;
 
 	default:
@@ -311,6 +414,19 @@ uint8_t Cisc::fetch()
 //
 //
 //
+uint16_t Cisc::fetchW()
+{
+	uint16_t word;
+
+	word = fetch();
+	word |= (fetch() << 8);
+
+	return word;
+}
+
+//
+//
+//
 void Cisc::decode()
 {
 }
@@ -320,7 +436,7 @@ void Cisc::decode()
 //
 void Cisc::panic()
 {
-	registers();
+	printRegisters();
 	exit(-1);
 }
 
@@ -373,7 +489,7 @@ int main(int argc, char* argv[])
 		printf(">");
 		fgets(buf, 255, stdin);
 		cpu.tick();
-		cpu.registers();
+		cpu.printRegisters();
 	}
 
 	return 0;

@@ -738,7 +738,7 @@ void AsmParser::file()
 			break;
 
 		case TV_LEAX:
-			imm16(OP_LEAX);
+			imm8(OP_LEAX);
 			break;
 
 		case TV_PUSH:

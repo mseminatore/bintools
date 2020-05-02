@@ -72,6 +72,7 @@ enum
 	TV_LDA,
 	TV_LDX,
 	TV_STA,
+	TV_STX,
 	TV_STAX,
 	TV_LAX,
 	TV_LEAX,
@@ -141,6 +142,7 @@ TokenTable _tokenTable[] =
 	
 	{ "LDA",	TV_LDA },
 	{ "STA",	TV_STA },
+	{ "STX",	TV_STX },
 	{ "STAX",	TV_STAX },
 	{ "LDX",	TV_LDX },
 	{ "LAX",	TV_LAX },
@@ -223,7 +225,7 @@ void AsmParser::label()
 		match();
 		
 		// set the labels value to be its address in the code segment
-		sym->ival = obj.getTextAddress();
+		sym->ival = obj.getTextSize();
 		sym->type = stLabel;
 		break;
 
@@ -673,7 +675,7 @@ void AsmParser::file()
 
 			yylval.sym->type = stProc;
 			yylval.sym->global = true;
-			applyFixups(yylval.sym->lexeme, obj.getTextAddress());
+			applyFixups(yylval.sym->lexeme, obj.getTextSize());
 			match();
 
 			break;
@@ -727,6 +729,10 @@ void AsmParser::file()
 			memOperand(OP_LDXI, OP_LDX, true);
 			break;
 		
+		case TV_STX:
+			dataAddress(OP_STX);
+			break;
+
 		case TV_STAX:
 			obj.addText(OP_STAX);
 			match();

@@ -31,6 +31,8 @@ enum
 	OP_XOR, OP_XORI,
 	//OP_ROL, OP_ROR,
 	//OP_SHL, OP_SHR,
+	//OP_COM,
+	//OP_NEG,
 
 	// branching
 	OP_CALL,
@@ -48,6 +50,7 @@ enum
 	OP_LEAX,
 	OP_LAX,
 	OP_STA,
+	OP_STX,
 	OP_STAX,
 
 	// stack
@@ -69,11 +72,17 @@ enum
 
 enum
 {
-	FLAG_C = 1,
-	FLAG_Z = 2,
-	FLAG_V = 4,
-	FLAG_N = 8,
-	FLAG_I = 16,
+	FLAG_C = 1,		// bit 0
+	FLAG_Z = 2,		// bit 1
+	FLAG_V = 4,		// bit 2
+	FLAG_N = 8,		// bit 3
+	FLAG_I = 16,	// bit 4
+	FLAG_ALL = 0xFF
+};
+
+enum
+{
+	INT_TIMER = 1
 };
 
 #endif __CPU_CISC_H

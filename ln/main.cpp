@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
 	
 	std::vector<AoutFile*> files;
 
-	// loop over the input files
+	// loop over and load the input files
 	for (int i = iFirstArg; i < argc; i++)
 	{
 		AoutFile *pObj = new AoutFile();
@@ -53,9 +53,13 @@ int main(int argc, char* argv[])
 		files.push_back(pObj);
 	}
 
-	//AsmParser parser;
-	//parser.yydebug = g_bDebug;
-	//parser.parseFile(argv[iFirstArg]);
+	// compute segment starts
+
+	// collect all the symbols
+
+	// do relocs
+	
+	// write the output file
 
 	return 0;
 }

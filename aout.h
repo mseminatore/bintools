@@ -90,6 +90,8 @@ protected:
 	using StringTable = std::vector<char>;
 	StringTable stringTable;
 
+	uint32_t textBase, dataBase, bssBase;
+
 public:
 	AoutFile();
 	virtual ~AoutFile();
@@ -97,14 +99,17 @@ public:
 	int writeFile(FILE *fptr);
 	int readFile(FILE *fptr);
 
-
 	// code/data segments
 	uint32_t addText(uint8_t item);
 	uint32_t addData(uint8_t item);
 	uint32_t allocBSS(size_t size);
-	uint32_t getTextAddress() { return text_segment.size(); }
-	uint32_t getDataAddress() { return data_segment.size(); }
+	uint32_t getTextSize() { return text_segment.size(); }
+	uint32_t getDataSize() { return data_segment.size(); }
 	
+	void setTextBase(uint32_t base) { textBase = base; }
+	void setDataBase(uint32_t base) { dataBase = base; }
+	void setBssBase(uint32_t base) { bssBase = base; }
+
 	uint8_t *textPtr() { return text_segment.data(); }
 	uint8_t *dataPtr() { return data_segment.data(); }
 

@@ -13,7 +13,7 @@ class Cisc
 protected:
 	uint8_t A, CC;
 	uint16_t PC, SP, X;
-
+	
 	uint8_t ram[0xFFFF];
 	uint8_t rom[0xFFFF];
 
@@ -48,7 +48,7 @@ public:
 	uint16_t fetchW();
 	uint8_t fetch();
 	void decode();
-	void updateFlag(bool result, uint8_t flag);
+	void updateFlag(uint32_t result, uint8_t flag);
 	void exec();
 	void tick();
 	void printRegisters()
@@ -72,11 +72,11 @@ void Cisc::load(const std::string &filename)
 
 	// populate ram
 	memset(ram, 0, 0xFFFF);
-	memcpy(ram, obj.dataPtr(), obj.getDataAddress());
+	memcpy(ram, obj.dataPtr(), obj.getDataSize());
 
 	// populate rom
 	memset(rom, 0, 0xFFFF);
-	memcpy(rom, obj.textPtr(), obj.getTextAddress());
+	memcpy(rom, obj.textPtr(), obj.getTextSize());
 }
 
 //
@@ -100,15 +100,15 @@ uint8_t Cisc::pop()
 void Cisc::getRegisterList(uint8_t operand, std::string &str)
 {
 	if (operand & REG_A)
-		str = "A";
+		str = "A ";
 	if (operand & REG_X)
-		str += ", X";
+		str += "X ";
 	if (operand & REG_CC)
-		str += ", CC";
+		str += "CC ";
 	if (operand & REG_SP)
-		str += ", SP";
+		str += "SP ";
 	if (operand & REG_PC)
-		str += ", PC";
+		str += "PC ";
 }
 
 //
@@ -170,7 +170,6 @@ void Cisc::pushRegs()
 void Cisc::popRegs()
 {
 	uint8_t operand = fetch();
-	uint16_t addr;
 
 	if (operand & REG_CC)
 		CC = pop();
@@ -204,7 +203,7 @@ void Cisc::popRegs()
 //
 //
 //
-void Cisc::updateFlag(bool result, uint8_t flag)
+void Cisc::updateFlag(uint32_t result, uint8_t flag)
 {
 	if (result)
 		SETF(flag);
@@ -285,36 +284,42 @@ void Cisc::exec()
 	case OP_AND:
 		addr = fetchW();
 		A = A & ram[addr];
+
 		log("AND [0x%X]", addr);
 		break;
 	
 	case OP_ANDI:
 		operand = fetch();
 		A = A & operand;
+
 		log("AND %d", operand);
 		break;
 
 	case OP_OR:
 		addr = fetchW();
 		A = A | ram[addr];
+
 		log("OR [0x%X]", addr);
 		break;
 
 	case OP_ORI:
 		operand = fetch();
 		A = A | operand;
+
 		log("OR %d", operand);
 		break;
 
 	case OP_XOR:
 		addr = fetchW();
 		A = A % ram[addr];
+
 		log("XOR [0x%X]", addr);
 		break;
 
 	case OP_XORI:
 		operand = fetch();
 		A = A % operand;
+
 		log("XOR %d", operand);
 		break;
 
@@ -333,6 +338,13 @@ void Cisc::exec()
 		log("RET");
 		break;
 
+	case OP_RTI:
+		PC = (pop() << 8) | pop();
+		CLRF(FLAG_I);
+
+		log("RTI");
+		break;
+
 	case OP_JMP:
 		PC = fetchW();
 		log("JMP 0x%X", PC);
@@ -344,6 +356,14 @@ void Cisc::exec()
 			PC = addr;
 
 		log("JNE 0x%X", addr);
+		break;
+
+	case OP_JEQ:
+		addr = fetchW();
+		if ((CC & FLAG_Z))
+			PC = addr;
+
+		log("JEQ 0x%X", addr);
 		break;
 
 	case OP_LAX:
@@ -376,8 +396,23 @@ void Cisc::exec()
 
 	case OP_LEAX:
 		operand = fetch();
-		X = X + operand;
+		X = (int)X + (char)operand;
 		log("LEAX %d", operand);
+		break;
+
+	case OP_STA:
+		addr = fetchW();
+		ram[addr] = A;
+
+		log("STA 0x%X", addr);
+		break;
+
+	case OP_STX:
+		addr = fetchW();
+		ram[addr] = X && 0xFF;
+		ram[addr + 1] = X >> 8;
+
+		log("STX 0x%X", addr);
 		break;
 
 	case OP_PUSH:

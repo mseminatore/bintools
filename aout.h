@@ -20,11 +20,23 @@ struct AOUT_HEADER
 
 static_assert(sizeof(AOUT_HEADER) == 32, "Invalid a.out header size!");
 
+// Segment types for relocation entries
 enum
 {
 	SEG_TEXT,
 	SEG_DATA,
 	SEG_BSS
+};
+
+// Symbol Entity types
+enum
+{
+	SET_EXTERN = 1,
+	SET_TEXT = 2,
+	SET_DATA = 4,
+	SET_BSS = 8,
+	SET_ABS = 16,
+	SET_UNDEFINED
 };
 
 struct RelocationEntry
@@ -57,8 +69,10 @@ struct SymbolEntity
 	uint32_t value;
 };
 
+static_assert(sizeof(SymbolEntity) == 12, "Invalid symbol entry!");
+
 //
-//
+// TODO - is this even needed?
 //
 class ObjectFile
 {
@@ -103,12 +117,18 @@ public:
 	uint32_t addText(uint8_t item);
 	uint32_t addData(uint8_t item);
 	uint32_t allocBSS(size_t size);
+
 	uint32_t getTextSize() { return text_segment.size(); }
 	uint32_t getDataSize() { return data_segment.size(); }
-	
+	uint32_t getBssSize() { return file_header.a_bss; }
+
 	void setTextBase(uint32_t base) { textBase = base; }
 	void setDataBase(uint32_t base) { dataBase = base; }
 	void setBssBase(uint32_t base) { bssBase = base; }
+
+	uint32_t getTextBase() { return textBase; }
+	uint32_t getDataBase() { return dataBase; }
+	uint32_t getBssBase() { return bssBase; }
 
 	uint8_t *textPtr() { return text_segment.data(); }
 	uint8_t *dataPtr() { return data_segment.data(); }

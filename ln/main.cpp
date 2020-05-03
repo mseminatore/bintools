@@ -54,11 +54,26 @@ int main(int argc, char* argv[])
 	}
 
 	// compute segment starts
+	for (int i = 1; i < files.size(); i++)
+	{
+		uint32_t offset;
+
+		offset = files[i - 1]->getTextBase() + files[i-1]->getTextSize();
+		files[i]->setTextBase(offset);
+
+		offset = files[i - 1]->getDataBase() + files[i - 1]->getDataSize();
+		files[i]->setDataBase(offset);
+
+		offset = files[i - 1]->getBssBase() + files[i - 1]->getBssSize();
+		files[i]->setBssBase(offset);
+	}
 
 	// collect all the symbols
 
 	// do relocs
-	
+
+	// merge the segments
+
 	// write the output file
 
 	return 0;

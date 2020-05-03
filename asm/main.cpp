@@ -34,6 +34,8 @@ protected:
 
 	void addFixup(const std::string &str, uint16_t addr);
 	void applyFixups(const std::string &str, uint16_t addr);
+	void dataByte(SymbolEntry * sym);
+	void dataWord(SymbolEntry * sym);
 
 public:
 	AsmParser();
@@ -209,6 +211,77 @@ AsmParser::AsmParser() : BaseParser(std::make_unique<SymbolTable>())
 }
 
 //
+// Allocate a data byte in the data segment
+//
+void AsmParser::dataByte(SymbolEntry *sym)
+{
+	match();
+
+	RelocationEntry re;
+	re.length = 0;
+	re.pcrel = 0;
+	re.external = 0;
+
+	if (lookahead == TV_INTVAL)
+	{
+		re.address = obj.addData(yylval.ival);
+		match();
+	}
+	else
+	{
+		re.address = obj.addData(yylval.char_val);
+		match();
+	}
+
+	obj.addDataRelocation(re);
+
+	if (sym)
+	{
+		SymbolEntity se;
+		se.type = SET_DATA;
+		se.value = re.address;
+
+		sym->type = stDataByte;
+		sym->ival = se.value;
+		obj.addSymbol(sym->lexeme, se);
+	}
+}
+
+//
+//
+//
+void AsmParser::dataWord(SymbolEntry *sym)
+{
+	match();
+
+	RelocationEntry re;
+	re.length = 1;
+	re.pcrel = 0;
+	re.external = 0;
+
+	// TODO need to add data reloc
+	auto val = yylval.ival;
+
+	re.address = obj.addData(LOBYTE(val));
+	obj.addData(HIBYTE(val));
+
+	match();
+
+	obj.addDataRelocation(re);
+
+	if (sym)
+	{
+		SymbolEntity se;
+		se.type = SET_DATA;
+		se.value = re.address;
+
+		sym->type = stDataWord;
+		sym->ival = se.value;
+		obj.addSymbol(sym->lexeme, se);
+	}
+}
+
+//
 //
 //
 void AsmParser::label()
@@ -248,35 +321,12 @@ void AsmParser::label()
 
 	case TV_DB:
 		// data byte
-		match();
-		sym->type = stDataByte;
-
-		// 
-		if (lookahead == TV_INTVAL)
-		{
-			sym->ival = obj.addData(yylval.ival);
-			match();
-		}
-		else
-		{
-			sym->ival = obj.addData(yylval.char_val);
-			match();
-		}
+		dataByte(sym);
 		break;
 
 	case TV_DW:
-	{
 		// data word
-		match();
-
-		auto val = yylval.ival;
-
-		sym->type = stDataWord;
-		sym->ival = obj.addData(LOBYTE(val));
-		obj.addData(HIBYTE(val));
-
-		match();
-	}
+		dataWord(sym);
 		break;
 
 	default:
@@ -559,8 +609,8 @@ void AsmParser::codeAddress(int op)
 		RelocationEntry re;
 		re.address	= addr;
 		re.length	= 1;
-		re.index	= SEG_TEXT;
-		re.external = 0;
+		re.index	= SEG_TEXT;	// for stExternal this needs to be the index to the symbol table entry
+		re.external = yylval.sym->type == stExternal ? 1 : 0;
 		obj.addTextRelocation(re);
 
 		match();
@@ -643,7 +693,7 @@ void AsmParser::imm8(int op)
 void AsmParser::include()
 {
 	match(TV_INCLUDE);
-	m_lexer->pushFile(yylval.sym->lexeme.c_str());
+		m_lexer->pushFile(yylval.sym->lexeme.c_str());
 	match(TV_STRING);
 }
 
@@ -652,10 +702,12 @@ void AsmParser::include()
 //
 void AsmParser::file()
 {
-	//DoIncludes();
+	SymbolEntity se;
 
 	while (lookahead != TV_DONE)
 	{
+		auto sym = yylval.sym;
+
 		switch (lookahead)
 		{
 		case TV_INCLUDE:
@@ -665,8 +717,13 @@ void AsmParser::file()
 		case TV_EXTERN:
 			match();
 
-			// TODO - mark the symbol as an external reference??
+			// mark the symbol as an external reference
 			yylval.sym->type = stExternal;
+
+			se.type = SET_EXTERN | SET_UNDEFINED;
+			se.value = 0;
+			obj.addSymbol(yylval.sym->lexeme, se);
+
 			match();
 			break;
 
@@ -675,6 +732,13 @@ void AsmParser::file()
 
 			yylval.sym->type = stProc;
 			yylval.sym->global = true;
+
+			se.type = SET_TEXT;
+			se.value = obj.getTextSize();
+			obj.addSymbol(yylval.sym->lexeme, se);
+
+			yylval.sym->ival = se.value;
+
 			applyFixups(yylval.sym->lexeme, obj.getTextSize());
 			match();
 
@@ -683,6 +747,13 @@ void AsmParser::file()
 		case TV_ID:
 			label();
 			break;
+
+		case TV_DB:
+			dataByte(sym);
+			break;
+
+		case TV_DW:
+			dataWord(sym);
 
 		case TV_NOP:
 			obj.addText(OP_NOP);
@@ -746,7 +817,7 @@ void AsmParser::file()
 		case TV_LEAX:
 			imm8(OP_LEAX);
 			break;
-
+			
 		case TV_PUSH:
 			obj.addText(OP_PUSH);
 			match();
@@ -820,15 +891,15 @@ int AsmParser::yyparse()
 	m_pSymbolTable->dumpContents();
 
 	// update symbols
-	auto sym = m_pSymbolTable->getFirstGlobal();
+	//auto sym = m_pSymbolTable->getFirstGlobal();
 
-	while (sym)
-	{
-		SymbolEntity se;
-		obj.addSymbol(sym->lexeme, se);
-		
-		sym = m_pSymbolTable->getNextGlobal();
-	}
+	//while (sym)
+	//{
+	//	SymbolEntity se;
+	//	obj.addSymbol(sym->lexeme, se);
+	//	
+	//	sym = m_pSymbolTable->getNextGlobal();
+	//}
 
 	writeFile(g_szOutputFilename);
 

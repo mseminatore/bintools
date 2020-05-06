@@ -128,7 +128,8 @@ int AoutFile::readFile(FILE *fptr)
 	{
 		auto sym = st[i];
 		char *pStr = &(stringTable[sym.nameOffset]);
-		symbolTable.insert(SymbolTable::value_type(pStr, sym));
+		symbolTable.push_back(SymbolTable::value_type(pStr, sym));
+		symbolLookup.insert(SymbolLookup::value_type(pStr, i));
 	}
 
 	return 0;
@@ -158,16 +159,19 @@ uint32_t AoutFile::addData(uint8_t item)
 
 void AoutFile::addSymbol(const std::string &name, SymbolEntity &sym)
 {
-	auto it = symbolTable.find(name);
+	auto it = symbolLookup.find(name);
 
-	// return if symbol already exists
-	if (it != symbolTable.end())
+	// TODO - return if symbol already exists??
+	if (it != symbolLookup.end())
 		return;
 
 	uint32_t offset = addString(name);
 	sym.nameOffset = offset;
 
-	symbolTable.insert(SymbolTable::value_type(name, sym));
+	auto index = symbolTable.size();
+
+	symbolTable.push_back(SymbolTable::value_type(name, sym));
+	symbolLookup.insert(SymbolLookup::value_type(name, index));
 }
 
 uint32_t AoutFile::addString(const std::string &name)
@@ -181,6 +185,16 @@ uint32_t AoutFile::addString(const std::string &name)
 	stringTable.push_back(0);
 
 	return offset;
+}
+
+size_t AoutFile::indexOfSymbol(const std::string &name)
+{
+	auto iter = symbolLookup.find(name);
+
+	if (iter == symbolLookup.end())
+		return UINT_MAX;
+
+	return iter->second;
 }
 
 void AoutFile::addTextRelocation(RelocationEntry &r)

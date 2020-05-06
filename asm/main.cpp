@@ -609,8 +609,17 @@ void AsmParser::codeAddress(int op)
 		RelocationEntry re;
 		re.address	= addr;
 		re.length	= 1;
-		re.index	= SEG_TEXT;	// for stExternal this needs to be the index to the symbol table entry
 		re.external = yylval.sym->type == stExternal ? 1 : 0;
+
+		if (re.external)
+		{
+			re.index = obj.indexOfSymbol(yylval.sym->lexeme);
+			assert(re.index != UINT_MAX);
+		}
+		else
+			re.index	= SEG_TEXT;	// for stExternal this needs to be the index to the symbol table entry
+
+
 		obj.addTextRelocation(re);
 
 		match();

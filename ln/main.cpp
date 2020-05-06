@@ -3,6 +3,8 @@
 #include "../aout.h"
 #include <stdio.h>
 
+uint16_t g_bBaseAddr = 0;
+
 //
 // show usage
 //
@@ -23,8 +25,8 @@ int getopt(int n, char *args[])
 		//if (args[i][1] == 'v')
 		//	g_bDebug = true;
 
-		//if (args[i][1] == 'o')
-		//	g_bDebug = true;
+		if (args[i][1] == 'b')
+			g_bBaseAddr = (uint16_t)atol(args[i+1]);
 	}
 
 	return i;
@@ -52,9 +54,12 @@ int main(int argc, char* argv[])
 
 		files.push_back(pObj);
 	}
+	
+	// possible adjust base address...
+	files[0]->setTextBase(g_bBaseAddr);
 
 	// compute segment starts
-	for (int i = 1; i < files.size(); i++)
+	for (size_t i = 1; i < files.size(); i++)
 	{
 		uint32_t offset;
 
@@ -64,13 +69,14 @@ int main(int argc, char* argv[])
 		offset = files[i - 1]->getDataBase() + files[i - 1]->getDataSize();
 		files[i]->setDataBase(offset);
 
+		// TODO - the BSS segments should stack at the end of the data segments!!
 		offset = files[i - 1]->getBssBase() + files[i - 1]->getBssSize();
 		files[i]->setBssBase(offset);
 	}
 
-	// collect all the symbols
+	// collect all the symbols - is this needed?
 
-	// do relocs
+	// do relocs and inter-segment fixups
 
 	// merge the segments
 

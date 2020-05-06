@@ -98,8 +98,12 @@ protected:
 	Relocations textRelocs;
 	Relocations dataRelocs;
 
-	using SymbolTable = std::map<std::string, SymbolEntity>;
+	// Make this a vector with a map of name/index pairs for lookup.
+	using SymbolTable = std::vector<std::pair<std::string, SymbolEntity>>;
+	using SymbolLookup = std::map<std::string, size_t>;
+
 	SymbolTable symbolTable;
+	SymbolLookup symbolLookup;
 
 	using StringTable = std::vector<char>;
 	StringTable stringTable;
@@ -133,9 +137,12 @@ public:
 	uint8_t *textPtr() { return text_segment.data(); }
 	uint8_t *dataPtr() { return data_segment.data(); }
 
+	void setEntryPoint(uint16_t val) { file_header.a_entry = val; }
+
 	// symbols
 	void addSymbol(const std::string &name, SymbolEntity &sym);
 	uint32_t addString(const std::string &name);
+	size_t indexOfSymbol(const std::string &name);
 
 	// relocations
 	void addTextRelocation(RelocationEntry&);

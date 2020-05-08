@@ -16,6 +16,97 @@ AoutFile::~AoutFile()
 
 }
 
+//
+//
+//
+SymbolEntity AoutFile::symbolAt(size_t index)
+{
+	return symbolTable[index].second;
+}
+
+//
+//
+//
+bool AoutFile::findSymbol(const std::string &name, SymbolEntity &sym)
+{
+	auto index = indexOfSymbol(name);
+	if (index != UINT_MAX)
+	{
+		sym = symbolAt(index);
+		return true;
+	}
+
+	return false;
+}
+
+//
+//
+//
+void AoutFile::concat(const AoutFile *rhs)
+{
+	// combine headers
+	file_header.a_bss += rhs->file_header.a_bss;
+	file_header.a_data += rhs->file_header.a_data;
+	file_header.a_text += rhs->file_header.a_text;
+	file_header.a_drsize += rhs->file_header.a_drsize;
+	file_header.a_trsize += rhs->file_header.a_trsize;
+
+	// TODO - we can only set this after we've merged symbols
+	//file_header.a_syms += rhs->file_header.a_syms;
+	
+	// merge segments
+	text_segment.insert(text_segment.end(), rhs->text_segment.begin(), rhs->text_segment.end());
+	data_segment.insert(data_segment.end(), rhs->data_segment.begin(), rhs->data_segment.end());
+
+	// merge symbols
+
+	// merge relocations updating addresses
+}
+
+//
+//
+//
+void AoutFile::relocate(const std::vector<AoutFile*> &modules)
+{
+	// for each relocation
+	for (auto it = textRelocs.begin(); it != textRelocs.end(); it++)
+	{
+		if (it->external)
+		{
+			auto name = symbolTable[it->index].first;
+			auto sym = symbolTable[it->index].second;
+			assert(sym.type & SET_UNDEFINED);
+
+			// find address of external symbol and patch it into this segment
+			SymbolEntity externSym;
+			for (auto moduleIter = modules.begin(); moduleIter != modules.end(); moduleIter++)
+			{
+				auto module = (*moduleIter);
+				// look for the symbol in the module
+				if (module->findSymbol(name, externSym))
+				{
+					// see if it is defined in this module
+					if (externSym.type & SET_TEXT && !(externSym.type & SET_UNDEFINED))
+					{
+						auto addr = module->getTextBase() + externSym.value;
+						text_segment[it->address] = LOBYTE(addr);
+						text_segment[it->address + 1] = HIBYTE(addr);
+					}
+				}
+			}
+		}
+		else
+		{
+			// address is in this segment, calculate absolute addr and patch it in
+			auto addr = textBase + text_segment[it->address] + (text_segment[it->address + 1] << 8);
+			
+			text_segment[it->address] = LOBYTE(addr);
+			text_segment[it->address + 1] = HIBYTE(addr);
+		}
+	}
+
+}
+
 int AoutFile::writeFile(FILE *fptr)
 {
 	assert(fptr != nullptr);

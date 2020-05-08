@@ -368,6 +368,11 @@ void Cisc::exec()
 
 	case OP_LAX:
 		A = ram[X];
+
+		updateFlag(A == 0, FLAG_Z);
+		updateFlag(A & 0x80, FLAG_N);
+		updateFlag(0, FLAG_V);
+
 		log("LAX");
 		break;
 

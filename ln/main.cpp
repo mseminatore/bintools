@@ -74,13 +74,24 @@ int main(int argc, char* argv[])
 		files[i]->setBssBase(offset);
 	}
 
-	// collect all the symbols - is this needed?
-
+	// for each module
 	// do relocs and inter-segment fixups
+	for (size_t i = 0; i < files.size(); i++)
+	{
+		files[i]->relocate(files);
+	}
 
 	// merge the segments
+	for (size_t i = 1; i < files.size(); i++)
+	{
+		files[0]->concat(files[i]);
+	}
+
+	// TODO - set the entry point
 
 	// write the output file
+	FILE *f = fopen("a.out", "wb");
+	files[0]->writeFile(f);
 
 	return 0;
 }

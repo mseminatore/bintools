@@ -3,6 +3,9 @@
 
 #pragma once
 
+#define LOBYTE(val) ((val) & 0xFF)
+#define HIBYTE(val) (((val) & 0xFF00) >> 8)
+
 #include <vector>
 #include <map>
 
@@ -31,12 +34,12 @@ enum
 // Symbol Entity types
 enum
 {
-	SET_EXTERN = 1,
-	SET_TEXT = 2,
-	SET_DATA = 4,
-	SET_BSS = 8,
-	SET_ABS = 16,
-	SET_UNDEFINED
+	SET_EXTERN = 1,		// globally visible symbol
+	SET_TEXT = 2,		// TEXT segment symbol
+	SET_DATA = 4,		// DATA segment symbol
+	SET_BSS = 8,		// BSS segment symbol
+	SET_ABS = 16,		// absolute non-relocatable item. Usually debugging symbol
+	SET_UNDEFINED = 32	// symbol not defined in this module
 };
 
 struct RelocationEntry
@@ -114,6 +117,8 @@ public:
 	AoutFile();
 	virtual ~AoutFile();
 
+	void concat(const AoutFile *rhs);
+
 	int writeFile(FILE *fptr);
 	int readFile(FILE *fptr);
 
@@ -143,10 +148,13 @@ public:
 	void addSymbol(const std::string &name, SymbolEntity &sym);
 	uint32_t addString(const std::string &name);
 	size_t indexOfSymbol(const std::string &name);
+	SymbolEntity symbolAt(size_t index);
+	bool findSymbol(const std::string &name, SymbolEntity &sym);
 
 	// relocations
 	void addTextRelocation(RelocationEntry&);
 	void addDataRelocation(RelocationEntry&);
+	void relocate(const std::vector<AoutFile*>&);
 
 	// debug output
 	void dumpHeader(FILE*);

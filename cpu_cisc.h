@@ -3,9 +3,6 @@
 #ifndef __CPU_CISC_H
 #define __CPU_CISC_H
 
-#define LOBYTE(val) ((val) & 0xFF)
-#define HIBYTE(val) (((val) & 0xFF00) >> 8)
-
 //
 // Memory map
 //

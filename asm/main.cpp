@@ -37,6 +37,8 @@ protected:
 	void dataByte(SymbolEntry * sym);
 	void dataWord(SymbolEntry * sym);
 
+	void dataString(SymbolEntry * sym);
+
 public:
 	AsmParser();
 	virtual ~AsmParser() = default;
@@ -85,6 +87,7 @@ enum
 	
 	TV_DB,
 	TV_DW,
+	TV_DS,
 
 	TV_EQU,
 	TV_ORG,
@@ -139,7 +142,8 @@ TokenTable _tokenTable[] =
 	{ "EQU",	TV_EQU },
 	{ "DB",		TV_DB},
 	{ "DW",		TV_DW},
-	
+	{ "DS",		TV_DS },
+
 	{ "LDA",	TV_LDA },
 	{ "STA",	TV_STA },
 	{ "STX",	TV_STX },
@@ -215,8 +219,9 @@ void AsmParser::dataByte(SymbolEntry *sym)
 {
 	match();
 
+	// TODO - not sure these are correct!?
 	RelocationEntry re;
-	re.length = 0;
+	re.length = 0;	// 1 byte
 	re.pcrel = 0;
 	re.external = 0;
 
@@ -252,8 +257,9 @@ void AsmParser::dataWord(SymbolEntry *sym)
 {
 	match();
 
+	// TODO - not sure these are correct!?
 	RelocationEntry re;
-	re.length = 1;
+	re.length = 1;	// 2 bytes
 	re.pcrel = 0;
 	re.external = 0;
 
@@ -282,6 +288,23 @@ void AsmParser::dataWord(SymbolEntry *sym)
 //
 //
 //
+void AsmParser::dataString(SymbolEntry *sym)
+{
+	match();
+
+	if (lookahead != TV_STRING)
+		yyerror("String literal expected");
+
+	for (int i = 0; i < yylval.sym->lexeme.size(); i++)
+		obj.addData(yylval.sym->lexeme[i]);
+
+	obj.addData(0);
+	match(TV_STRING);
+}
+
+//
+//
+//
 void AsmParser::label()
 {
 	// we found a new symbol
@@ -299,7 +322,7 @@ void AsmParser::label()
 		sym->ival = obj.getTextSize();
 		sym->type = stLabel;
 
-		// TODO - !!!need to apply fixups here to fix any forward references to this label!!!
+		// need to apply fixups here to fix any forward references to this label
 		applyFixups(sym->lexeme, obj.getTextSize());
 
 		break;
@@ -329,6 +352,10 @@ void AsmParser::label()
 	case TV_DW:
 		// data word
 		dataWord(sym);
+		break;
+
+	case TV_DS:
+		dataString(sym);
 		break;
 
 	default:

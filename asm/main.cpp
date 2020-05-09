@@ -57,8 +57,6 @@ public:
 
 	uint8_t reg();
 	uint8_t regSet();
-
-	void writeFile(const std::string &name);
 };
 
 //
@@ -880,41 +878,30 @@ void AsmParser::file()
 //
 //
 //
-void AsmParser::writeFile(const std::string &name)
-{
-	FILE *f = fopen(name.c_str(), "wb");
-	if (nullptr == f)
-		return;
-
-	obj.writeFile(f);
-}
-
-//
-//
-//
 int AsmParser::yyparse()
 {
 	BaseParser::yyparse();
 
 	file();
 
-	//if (yydebug)
-	//	root.dumpAll();
+	//m_pSymbolTable->dumpContents();
 
-	m_pSymbolTable->dumpContents();
+	// report any undefined symbols
+	bool bMissingSymbols = false;
+	for (auto it = fixups.begin(); it != fixups.end(); it++)
+	{
+		fprintf(stderr, "error: undefined symbol \"%s\"\n", it->first.c_str());
+		bMissingSymbols = true;
+	}
 
-	// update symbols
-	//auto sym = m_pSymbolTable->getFirstGlobal();
+	if (bMissingSymbols)
+	{
+		fprintf(stderr, "error: Assembly failed!\n");
+		exit(-1);
+	}
 
-	//while (sym)
-	//{
-	//	SymbolEntity se;
-	//	obj.addSymbol(sym->lexeme, se);
-	//	
-	//	sym = m_pSymbolTable->getNextGlobal();
-	//}
-
-	writeFile(g_szOutputFilename);
+	// write out the OBJ file
+	obj.writeFile(g_szOutputFilename);
 
 	return 0;
 }

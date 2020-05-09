@@ -3,6 +3,8 @@
 
 #pragma once
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #define LOBYTE(val) ((val) & 0xFF)
 #define HIBYTE(val) (((val) & 0xFF00) >> 8)
 
@@ -120,6 +122,7 @@ public:
 	void concat(const AoutFile *rhs);
 
 	int writeFile(FILE *fptr);
+	int writeFile(const std::string &name);
 	int readFile(FILE *fptr);
 
 	// code/data segments

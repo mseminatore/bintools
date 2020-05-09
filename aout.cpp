@@ -107,6 +107,18 @@ void AoutFile::relocate(const std::vector<AoutFile*> &modules)
 
 }
 
+int AoutFile::writeFile(const std::string &name)
+{
+	FILE *f = fopen(name.c_str(), "wb");
+	if (nullptr == f)
+		return -1;
+
+	auto result = writeFile(f);
+	fclose(f);
+
+	return result;
+}
+
 int AoutFile::writeFile(FILE *fptr)
 {
 	assert(fptr != nullptr);

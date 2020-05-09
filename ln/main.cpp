@@ -3,7 +3,12 @@
 #include "../aout.h"
 #include <stdio.h>
 
+//
+// Command line switches
+//
 uint16_t g_bBaseAddr = 0;
+char *g_szOutputFilename = "a.out";
+
 
 //
 // show usage
@@ -25,8 +30,17 @@ int getopt(int n, char *args[])
 		//if (args[i][1] == 'v')
 		//	g_bDebug = true;
 
+		if (args[i][1] == 'o')
+		{
+			g_szOutputFilename = args[i + 1];
+			i++;
+		}
+
 		if (args[i][1] == 'b')
-			g_bBaseAddr = (uint16_t)atol(args[i+1]);
+		{
+			g_bBaseAddr = (uint16_t)atol(args[i + 1]);
+			i++;
+		}
 	}
 
 	return i;
@@ -90,8 +104,7 @@ int main(int argc, char* argv[])
 	// TODO - set the entry point
 
 	// write the output file
-	FILE *f = fopen("a.out", "wb");
-	files[0]->writeFile(f);
+	files[0]->writeFile(g_szOutputFilename);
 
 	return 0;
 }

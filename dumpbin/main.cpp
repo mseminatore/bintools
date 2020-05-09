@@ -18,6 +18,9 @@ void usage()
 	printf("usage: dumpbin [options] filename\n\n");
 	printf("-t\tdump text segment\n");
 	printf("-d\tdump data segment\n");
+	printf("-r\tdump relocations\n");
+	printf("-s\tdump symbols\n");
+	printf("-a\tdump all\n");
 	exit(0);
 }
 
@@ -43,6 +46,19 @@ int getopt(int n, char *args[])
 
 		if (args[i][1] == 'g')
 			g_bGenerateTestFile = true;
+
+		if (args[i][1] == 's')
+			g_bDumpSymbols = true;
+
+		if (args[i][1] == 'a')
+		{
+			g_bDumpText = true;
+			g_bDumpData = true;
+			g_bDumpTextRelocs = true;
+			g_bDumpDataRelocs = true;
+			g_bDumpSymbols = true;
+			g_bDumpStrings = true;
+		}
 	}
 
 	return i;
@@ -134,4 +150,7 @@ void main(int argc, char *argv[])
 
 	if (g_bDumpDataRelocs)
 		a.dumpDataRelocs(stdout);
+
+	if (g_bDumpSymbols)
+		a.dumpSymbols(stdout);
 }

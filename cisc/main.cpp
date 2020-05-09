@@ -23,7 +23,6 @@ protected:
 	void log(const char *fmt, ...);
 
 	void pushRegs();
-
 	void popRegs();
 
 public:
@@ -55,6 +54,11 @@ public:
 	{
 		printf("A = %02X X = %04X CC = %02X SP = %04X PC = %04X\n", A, X, CC, SP, PC);
 	}
+
+	void printMemory(uint32_t addr)
+	{
+		printf("%d (0x%04X): %d\n", addr, addr, ram[addr]);
+	}
 };
 
 //
@@ -77,6 +81,8 @@ void Cisc::load(const std::string &filename)
 	// populate rom
 	memset(rom, 0, 0xFFFF);
 	memcpy(rom, obj.textPtr(), obj.getTextSize());
+
+	fclose(f);
 }
 
 //
@@ -379,12 +385,22 @@ void Cisc::exec()
 	case OP_LDA:
 		addr = fetchW();
 		A = ram[addr];
+
+		updateFlag(A == 0, FLAG_Z);
+		updateFlag(A & 0x80, FLAG_N);
+		updateFlag(0, FLAG_V);
+
 		log("LDA [0x%X]", addr);
 		break;
 
 	case OP_LDAI:
 		operand = fetch();
 		A = operand;
+
+		updateFlag(A == 0, FLAG_Z);
+		updateFlag(A & 0x80, FLAG_N);
+		updateFlag(0, FLAG_V);
+
 		log("LDA %d", operand);
 		break;
 
@@ -418,6 +434,12 @@ void Cisc::exec()
 		ram[addr + 1] = X >> 8;
 
 		log("STX 0x%X", addr);
+		break;
+
+	case OP_STAX:
+		ram[X] = A;
+
+		log("STAX");
 		break;
 
 	case OP_PUSH:
@@ -477,6 +499,9 @@ void Cisc::decode()
 void Cisc::panic()
 {
 	printRegisters();
+
+	while (true);
+
 	exit(-1);
 }
 
@@ -528,8 +553,23 @@ int main(int argc, char* argv[])
 	{
 		printf(">");
 		fgets(buf, 255, stdin);
-		cpu.tick();
-		cpu.printRegisters();
+
+		char *pToken = strtok(buf, " \n");
+		if (!pToken)
+			cpu.tick();
+		else if (!strcmp(pToken, "r"))
+			cpu.printRegisters();
+		else if (!strcmp(pToken, "d"))
+		{
+			auto tok = strtok(nullptr, " \n");
+			uint32_t addr = 0;
+			if (tok)
+				addr = strtoul(tok, nullptr, 10);
+			
+			cpu.printMemory(addr);
+		}
+
+		
 	}
 
 	return 0;

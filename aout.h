@@ -162,6 +162,7 @@ public:
 	void dumpData(FILE*);
 	void dumpTextRelocs(FILE*);
 	void dumpDataRelocs(FILE*);
+	void dumpSymbols(FILE*);
 
 	void hexDumpGroup(FILE *f, uint8_t *buf);
 	void hexDumpLine(FILE *f, uint32_t offset, uint8_t *buf);

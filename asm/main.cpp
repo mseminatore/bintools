@@ -300,6 +300,10 @@ void AsmParser::label()
 		// set the labels value to be its address in the code segment
 		sym->ival = obj.getTextSize();
 		sym->type = stLabel;
+
+		// TODO - !!!need to apply fixups here to fix any forward references to this label!!!
+		applyFixups(sym->lexeme, obj.getTextSize());
+
 		break;
 
 	case TV_EQU:

@@ -441,3 +441,33 @@ void AoutFile::dumpDataRelocs(FILE *f)
 
 	fputc('\n', f);
 }
+
+void AoutFile::dumpSymbols(FILE *f)
+{
+	assert(f != nullptr);
+	if (f == nullptr)
+		return;
+
+	fprintf(f, "Symbols\n");
+	fprintf(f, "-------\n\n");
+
+	auto iter = symbolTable.begin();
+	for (; iter != symbolTable.end(); iter++)
+	{
+		auto sym = *iter;
+		std::string type;
+
+		if (sym.second.type & SET_EXTERN)
+			type += " public";
+		if (sym.second.type & SET_TEXT)
+			type += " .text";
+		if (sym.second.type & SET_DATA)
+			type += " .data";
+		if (sym.second.type & SET_BSS)
+			type += " .bss";
+		if (sym.second.type & SET_UNDEFINED)
+			type += " external";
+
+		fprintf(f, "name: %s,%s, segment offset: %d (0x%04X)\n", sym.first.c_str(), type.c_str(), sym.second.value, sym.second.value);
+	}
+}

@@ -128,11 +128,9 @@ void main(int argc, char *argv[])
 
 	AoutFile a;
 
-	FILE *fptr = nullptr;
-	
-	auto result = fopen_s(&fptr, argv[iFirstArg], "rb");
+	a.readFile(argv[iFirstArg]);
 
-	a.readFile(fptr);
+	fprintf(stdout, "Dumping %s\n\n", argv[iFirstArg]);
 
 	// dump the header data
 	a.dumpHeader(stdout);

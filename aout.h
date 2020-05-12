@@ -124,6 +124,7 @@ public:
 	int writeFile(FILE *fptr);
 	int writeFile(const std::string &name);
 	int readFile(FILE *fptr);
+	int readFile(const std::string &name);
 
 	// code/data segments
 	uint32_t addText(uint8_t item);

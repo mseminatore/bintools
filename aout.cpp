@@ -169,6 +169,18 @@ int AoutFile::writeFile(FILE *fptr)
 	return 0;
 }
 
+int AoutFile::readFile(const std::string &name)
+{
+	FILE *f = fopen(name.c_str(), "rb");
+	if (nullptr == f)
+		return -1;
+
+	auto result = readFile(f);
+	fclose(f);
+
+	return result;
+}
+
 int AoutFile::readFile(FILE *fptr)
 {
 	assert(fptr != nullptr);
@@ -315,6 +327,9 @@ void AoutFile::dumpHeader(FILE *f)
 	assert(f != nullptr);
 	if (f == nullptr)
 		return;
+
+	fprintf(f, "File Header\n");
+	fprintf(f, "-----------\n\n");
 
 	fprintf(f, "     Magic Number: 0x%X\n", file_header.a_magic);
 	fprintf(f, "Text Segment size: 0x%04X (%d) bytes\n", file_header.a_text, file_header.a_text);

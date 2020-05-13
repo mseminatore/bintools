@@ -5,6 +5,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#define SETF(flag) (CC |= flag)
+#define CLRF(flag) (CC &= ~flag)
+#define TSTF(flag) (CC ^ flag) 
+
 //
 //
 //
@@ -36,7 +40,8 @@ public:
 	void reset() 
 	{ 
 		A = CC = opcode = 0; 
-		PC = X = 0;
+		X = 0;
+		PC = ram[RESET_VECTOR];
 		SP = RAM_END;
 	}
 
@@ -47,9 +52,13 @@ public:
 	uint16_t fetchW();
 	uint8_t fetch();
 	void decode();
+	void pushAll();
+	void popAll();
 	void updateFlag(uint32_t result, uint8_t flag);
 	void exec();
 	void tick();
+	void interrupt();
+
 	void printRegisters()
 	{
 		printf("A = %02X X = %04X CC = %02X SP = %04X PC = %04X\n", A, X, CC, SP, PC);
@@ -203,9 +212,6 @@ void Cisc::popRegs()
 	log("POP %s", s.c_str());
 }
 
-#define SETF(flag) (CC |= flag)
-#define CLRF(flag) (CC &= ~flag)
-
 //
 //
 //
@@ -345,7 +351,7 @@ void Cisc::exec()
 		break;
 
 	case OP_RTI:
-		PC = (pop() << 8) | pop();
+		popAll();
 		CLRF(FLAG_I);
 
 		log("RTI");
@@ -491,6 +497,53 @@ uint16_t Cisc::fetchW()
 //
 void Cisc::decode()
 {
+}
+
+//
+//
+//
+void Cisc::pushAll()
+{
+	push(LOBYTE(PC));
+	push(HIBYTE(PC));
+
+	auto addr = SP;
+	push(LOBYTE(addr));
+	push(HIBYTE(addr));
+
+	push(LOBYTE(X));
+	push(HIBYTE(X));
+
+	push(A);
+
+	push(CC);
+}
+
+//
+//
+//
+void Cisc::popAll()
+{
+	CC = pop();
+
+	A = pop();
+
+	X = (pop() << 8) | pop();
+	SP = (pop() << 8) | pop();
+	PC = (pop() << 8) | pop();
+}
+
+//
+//
+//
+void Cisc::interrupt()
+{
+	// no re-entrant interrupts by default
+	if (TSTF(FLAG_I))
+		return;
+
+	// save the current context
+	pushAll();
 }
 
 //

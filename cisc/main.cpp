@@ -41,6 +41,10 @@ public:
 	{ 
 		A = CC = opcode = 0; 
 		X = 0;
+
+		ram[RESET_VECTOR] = 0;
+		ram[RESET_VECTOR + 1] = 0;
+
 		PC = ram[RESET_VECTOR];
 		SP = RAM_END;
 	}
@@ -616,10 +620,18 @@ int main(int argc, char* argv[])
 		{
 			auto tok = strtok(nullptr, " \n");
 			uint32_t addr = 0;
+			auto base = 10;
 			if (tok)
-				addr = strtoul(tok, nullptr, 10);
-			
-			cpu.printMemory(addr);
+			{
+				if (tok[0] == '$')
+				{
+					base = 16;
+					tok++;
+				}
+				addr = strtoul(tok, nullptr, base);
+
+				cpu.printMemory(addr);
+			}
 		}
 
 		

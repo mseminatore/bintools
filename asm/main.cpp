@@ -18,7 +18,8 @@ enum
 	stProc,
 	stExternal,
 	stDataByte,
-	stDataWord
+	stDataWord,
+	stDataString
 };
 
 //
@@ -36,7 +37,6 @@ protected:
 	void applyFixups(const std::string &str, uint16_t addr);
 	void dataByte(SymbolEntry * sym);
 	void dataWord(SymbolEntry * sym);
-
 	void dataString(SymbolEntry * sym);
 
 public:
@@ -50,6 +50,7 @@ public:
 	void imm16(int op);
 
 	void memOperand(int immOp, int memOp, bool isWordValue = false);
+	void addTextRelocation(uint32_t addr, uint32_t length, uint32_t index, bool external);
 	void dataAddress(int op);
 	void codeAddress(int op);
 
@@ -217,33 +218,24 @@ AsmParser::AsmParser() : BaseParser(std::make_unique<SymbolTable>())
 //
 void AsmParser::dataByte(SymbolEntry *sym)
 {
-	match();
+	SymbolEntity se;
+	se.type = SET_DATA;
 
-	// TODO - not sure these are correct!?
-	RelocationEntry re;
-	re.length = 0;	// 1 byte
-	re.pcrel = 0;
-	re.external = 0;
+	match();
 
 	if (lookahead == TV_INTVAL)
 	{
-		re.address = obj.addData(yylval.ival);
+		se.value = obj.addData(yylval.ival);
 		match();
 	}
 	else
 	{
-		re.address = obj.addData(yylval.char_val);
+		se.value = obj.addData(yylval.char_val);
 		match();
 	}
 
-	obj.addDataRelocation(re);
-
 	if (sym)
 	{
-		SymbolEntity se;
-		se.type = SET_DATA;
-		se.value = re.address;
-
 		sym->type = stDataByte;
 		sym->ival = se.value;
 		obj.addSymbol(sym->lexeme, se);
@@ -255,30 +247,20 @@ void AsmParser::dataByte(SymbolEntry *sym)
 //
 void AsmParser::dataWord(SymbolEntry *sym)
 {
+	SymbolEntity se;
+	se.type = SET_DATA;
+
 	match();
 
-	// TODO - not sure these are correct!?
-	RelocationEntry re;
-	re.length = 1;	// 2 bytes
-	re.pcrel = 0;
-	re.external = 0;
-
-	// TODO need to add data reloc
 	auto val = yylval.ival;
 
-	re.address = obj.addData(LOBYTE(val));
+	se.value = obj.addData(LOBYTE(val));
 	obj.addData(HIBYTE(val));
 
 	match();
 
-	obj.addDataRelocation(re);
-
 	if (sym)
 	{
-		SymbolEntity se;
-		se.type = SET_DATA;
-		se.value = re.address;
-
 		sym->type = stDataWord;
 		sym->ival = se.value;
 		obj.addSymbol(sym->lexeme, se);
@@ -290,15 +272,30 @@ void AsmParser::dataWord(SymbolEntry *sym)
 //
 void AsmParser::dataString(SymbolEntry *sym)
 {
+	SymbolEntity se;
+	se.type = SET_DATA;
+
 	match();
 
 	if (lookahead != TV_STRING)
 		yyerror("String literal expected");
 
-	for (int i = 0; i < yylval.sym->lexeme.size(); i++)
+	se.value = obj.getDataSize();
+
+	// copy the data into the segment
+	for (size_t i = 0; i < yylval.sym->lexeme.size(); i++)
 		obj.addData(yylval.sym->lexeme[i]);
 
+	// make sure it is null terminated
 	obj.addData(0);
+
+	if (sym)
+	{
+		sym->type = stDataString;
+		sym->ival = se.value;
+		obj.addSymbol(sym->lexeme, se);
+	}
+
 	match(TV_STRING);
 }
 
@@ -420,6 +417,21 @@ uint8_t AsmParser::regSet()
 }
 
 //
+//
+//
+void AsmParser::addTextRelocation(uint32_t addr, uint32_t length, uint32_t index, bool external)
+{
+	RelocationEntry re;
+
+	re.address = addr;
+	re.length = length;
+	re.index = index;
+	re.external = external ? 1 : 0;
+
+	obj.addTextRelocation(re);
+}
+
+//
 // an 8b immediate value or an address
 //
 void AsmParser::memOperand(int immOp, int memOp, bool isWordValue)
@@ -466,13 +478,7 @@ void AsmParser::memOperand(int immOp, int memOp, bool isWordValue)
 
 			if (isAddrOperand)
 			{
-				RelocationEntry re;
-				re.address = addr;
-				re.length = 1;
-				re.index = SEG_DATA;
-				re.external = 0;
-
-				obj.addTextRelocation(re);
+				addTextRelocation(addr, 1, SEG_DATA, false);
 			}
 		}
 
@@ -480,8 +486,9 @@ void AsmParser::memOperand(int immOp, int memOp, bool isWordValue)
 	}
 		break;
 
-	case TV_ID:	// named immediate value
+	case TV_ID:	// named value either an imm or an addr
 	{
+		// value is either an immediate or an addr
 		auto val = yylval.sym->ival;
 
 		auto addr = obj.addText(LOBYTE(val));
@@ -491,14 +498,21 @@ void AsmParser::memOperand(int immOp, int memOp, bool isWordValue)
 
 			if (isAddrOperand)
 			{
-				RelocationEntry re;
-				re.address = addr;
-				re.length = 1;
-				re.index = SEG_DATA;
-				re.external = 0;
-				
-				obj.addTextRelocation(re);
+				addTextRelocation(addr, 1, SEG_DATA, false);
+
+				// does the symbol exist?
+				SymbolEntity se;
+				if (!obj.findSymbol(yylval.sym->lexeme, se) && yylval.sym->type != stEqu)
+				{
+					// mark the symbol as an external reference
+					yylval.sym->type = stExternal;
+
+					se.type = SET_EXTERN | SET_UNDEFINED;
+					se.value = 0;
+					obj.addSymbol(yylval.sym->lexeme, se);
+				}
 			}
+
 		}
 
 		match();
@@ -521,46 +535,31 @@ void AsmParser::dataAddress(int op)
 	obj.addText(op);
 	match();
 
+	uint32_t val = 0;
+
 	if (lookahead == TV_INTVAL)
 	{
-		auto val = yylval.ival;
-
-		auto addr = obj.addText(LOBYTE(val));
-		obj.addText(HIBYTE(val));
-
-		RelocationEntry re;
-		re.address = addr;
-		re.length = 1;
-		re.index = SEG_DATA;
-		re.external = 0;
-		obj.addTextRelocation(re);
-
-		match();
+		val = yylval.ival;
 	}
 	else if (lookahead == TV_ID)
 	{
-		auto val = yylval.sym->ival;
-
-		auto addr = obj.addText(LOBYTE(val));
-		obj.addText(HIBYTE(val));
-
-		RelocationEntry re;
-		re.address = addr;
-		re.length = 1;
-		re.index = SEG_DATA;
-		re.external = 0;
-		obj.addTextRelocation(re);
-
-		match();
+		val = yylval.sym->ival;
 	}
 	else
 	{
 		yyerror("syntax error");
 	}
+
+	auto addr = obj.addText(LOBYTE(val));
+	obj.addText(HIBYTE(val));
+
+	addTextRelocation(addr, 1, SEG_DATA, false);
+
+	match();
 }
 
 //
-//
+// We saw a new symbol declaration. Fixup any intra-segment forward references to this symbol
 //
 void AsmParser::applyFixups(const std::string &str, uint16_t addr)
 {
@@ -583,7 +582,7 @@ void AsmParser::applyFixups(const std::string &str, uint16_t addr)
 }
 
 //
-//
+// We found an inferred forward reference to a symbol, add the location to fixups list
 //
 void AsmParser::addFixup(const std::string &str, uint16_t addr)
 {
@@ -615,12 +614,7 @@ void AsmParser::codeAddress(int op)
 		auto addr = obj.addText(LOBYTE(val));
 		obj.addText(HIBYTE(val));
 
-		RelocationEntry re;
-		re.address	= addr;
-		re.length	= 1;
-		re.index	= SEG_TEXT;
-		re.external = 0;
-		obj.addTextRelocation(re);
+		addTextRelocation(addr, 1, SEG_TEXT, false);
 
 		match();
 	}
@@ -635,21 +629,17 @@ void AsmParser::codeAddress(int op)
 		if (yylval.sym->type == stUndef)
 			addFixup(yylval.sym->lexeme, addr);
 
-		RelocationEntry re;
-		re.address	= addr;
-		re.length	= 1;
-		re.external = yylval.sym->type == stExternal ? 1 : 0;
 
-		if (re.external)
+		auto external = yylval.sym->type == stExternal ? true : false;
+		uint32_t index = SEG_TEXT;
+		if (external)
 		{
-			re.index = obj.indexOfSymbol(yylval.sym->lexeme);
-			assert(re.index != UINT_MAX);
+			// for stExternal this needs to be the index to the symbol table entry
+			index = obj.indexOfSymbol(yylval.sym->lexeme);
+			assert(index != UINT_MAX);
 		}
-		else
-			re.index	= SEG_TEXT;	// for stExternal this needs to be the index to the symbol table entry
 
-
-		obj.addTextRelocation(re);
+		addTextRelocation(addr, 1, index, external);
 
 		match();
 	}
@@ -660,34 +650,35 @@ void AsmParser::codeAddress(int op)
 }
 
 //
-//
+// We are expecting a 16b immediate value or a named value
 //
 void AsmParser::imm16(int op)
 {
 	obj.addText(op);
 	match();
 
+	uint32_t val = 0;
+
 	if (lookahead == TV_INTVAL)
 	{
-		auto val = yylval.ival;
-		obj.addText(LOBYTE(val));
-		obj.addText(HIBYTE(val));
-		match();
+		val = yylval.ival;
 	}
 	else if (lookahead == TV_ID)
 	{
 		if (yylval.sym->type != stEqu)
 			yyerror("EQU expected!");
 
-		auto val = yylval.sym->ival;
-		obj.addText(LOBYTE(val));
-		obj.addText(HIBYTE(val));
-		match();
+		val = yylval.sym->ival;
 	}
 	else
 	{
 		yyerror("invalid operand!");
 	}
+
+	obj.addText(LOBYTE(val));
+	obj.addText(HIBYTE(val));
+	match();
+
 }
 
 //
@@ -698,31 +689,30 @@ void AsmParser::imm8(int op)
 	obj.addText(op);
 	match();
 
+	uint32_t val = 0;
+
 	if (lookahead == TV_INTVAL)
 	{
-		auto val = yylval.ival;
-		obj.addText(LOBYTE(val));
-		match();
+		val = yylval.ival;
 	}
 	else if (lookahead == TV_CHARVAL)
 	{
-		auto val = yylval.char_val;
-		obj.addText(val);
-		match();
+		val = yylval.char_val;
 	}
 	else if (lookahead == TV_ID)
 	{
 		if (yylval.sym->type != stEqu)
 			yyerror("EQU expected!");
 
-		auto val = yylval.sym->ival;
-		obj.addText(LOBYTE(val));
-		match();
+		val = yylval.sym->ival;
 	}
 	else
 	{
 		yyerror("invalid operand!");
 	}
+
+	obj.addText(LOBYTE(val));
+	match();
 }
 
 //

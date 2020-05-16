@@ -18,8 +18,8 @@ protected:
 	uint8_t A, CC;
 	uint16_t PC, SP, X;
 	
-	uint8_t ram[0xFFFF];
-	uint8_t rom[0xFFFF];
+	uint8_t ram[0x10000];
+	uint8_t rom[0x10000];
 
 	uint8_t opcode;
 	static const int SMALL_BUFFER = 256;
@@ -61,7 +61,7 @@ public:
 	void updateFlag(uint32_t result, uint8_t flag);
 	void exec();
 	void tick();
-	void interrupt();
+	void interrupt(uint32_t vector);
 
 	void printRegisters()
 	{
@@ -70,7 +70,7 @@ public:
 
 	void printMemory(uint32_t addr)
 	{
-		printf("%d (0x%04X): %d\n", addr, addr, ram[addr]);
+		printf("%d (0x%04X): %d (0x%04X)\n", addr, addr, ram[addr], ram[addr]);
 	}
 };
 
@@ -416,7 +416,7 @@ void Cisc::exec()
 
 	case OP_LDX:
 		addr = fetchW();
-		X = ram[addr];
+		X = ram[addr] + (ram[addr + 1] << 8);
 		log("LDX [0x%X]", addr);
 		break;
 
@@ -440,8 +440,8 @@ void Cisc::exec()
 
 	case OP_STX:
 		addr = fetchW();
-		ram[addr] = X && 0xFF;
-		ram[addr + 1] = X >> 8;
+		ram[addr] = LOBYTE(X);
+		ram[addr + 1] = HIBYTE(X);
 
 		log("STX 0x%X", addr);
 		break;
@@ -540,7 +540,7 @@ void Cisc::popAll()
 //
 //
 //
-void Cisc::interrupt()
+void Cisc::interrupt(uint32_t vector)
 {
 	// no re-entrant interrupts by default
 	if (TSTF(FLAG_I))
@@ -548,6 +548,9 @@ void Cisc::interrupt()
 
 	// save the current context
 	pushAll();
+
+	// jump to the interrupt vector
+	PC = ram[vector] + (ram[vector + 1] << 8);
 }
 
 //

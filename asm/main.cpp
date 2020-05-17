@@ -49,6 +49,8 @@ public:
 	void imm8(int op);
 	void imm16(int op);
 
+	bool isDataLabel(int type);
+
 	void memOperand(int immOp, int memOp, bool isWordValue = false);
 	void addTextRelocation(uint32_t addr, uint32_t length, uint32_t index, bool external);
 	void dataAddress(int op);
@@ -211,6 +213,47 @@ AsmParser::AsmParser() : BaseParser(std::make_unique<SymbolTable>())
 	m_lexer->setCharLiterals(true);
 	m_lexer->setCPPComments(true);
 	m_lexer->setHexNumbers(true);
+}
+
+//
+// We saw a new symbol declaration. Fixup any intra-segment forward references to this symbol
+//
+void AsmParser::applyFixups(const std::string &str, uint16_t addr)
+{
+	auto iter = fixups.find(str);
+
+	// if there were no forward refs there will be no fixups
+	if (iter == fixups.end())
+		return;
+
+	for (auto i = iter->second.begin(); i != iter->second.end(); i++)
+	{
+		auto loc = *i;
+		auto rom = obj.textPtr();
+		rom[loc] = addr & 0xFF;
+		rom[loc + 1] = addr >> 8;
+	}
+
+	// we are done with these fixups!
+	fixups.erase(iter);
+}
+
+//
+// We found an inferred forward reference to a symbol, add the location to fixups list
+//
+void AsmParser::addFixup(const std::string &str, uint16_t addr)
+{
+	auto iter = fixups.find(str);
+	if (iter != fixups.end())
+	{
+		iter->second.push_back(addr);
+	}
+	else
+	{
+		AddressList list;
+		list.push_back(addr);
+		fixups.insert(Fixups::value_type(str, list));
+	}
 }
 
 //
@@ -432,262 +475,11 @@ void AsmParser::addTextRelocation(uint32_t addr, uint32_t length, uint32_t index
 }
 
 //
-// an 8b immediate value or an address
-//
-void AsmParser::memOperand(int immOp, int memOp, bool isWordValue)
-{
-	bool isAddrOperand = false;
-
-	match();
-
-	if (lookahead == '[')
-	{
-		obj.addText(memOp);
-		isAddrOperand = true;
-		match();
-	}
-	else
-	{
-		obj.addText(immOp);
-	}
-
-	switch (lookahead)
-	{
-	case TV_CHARVAL:	// immediate value
-	{
-		if (isAddrOperand)
-			yyerror("character literal not allowed!");
-		if (isWordValue)
-			yyerror("word value expected!");
-
-		auto val = yylval.char_val;
-
-		obj.addText(LOBYTE(val));
-		match();
-	}
-		break;
-
-	case TV_INTVAL:	// immediate value
-	{
-		auto val = yylval.ival;
-
-		auto addr = obj.addText(LOBYTE(val));
-		if (isAddrOperand || isWordValue)
-		{
-			obj.addText(HIBYTE(val));
-
-			if (isAddrOperand)
-			{
-				addTextRelocation(addr, 1, SEG_DATA, false);
-			}
-		}
-
-		match();
-	}
-		break;
-
-	case TV_ID:	// named value either an imm or an addr
-	{
-		// value is either an immediate or an addr
-		auto val = yylval.sym->ival;
-
-		auto addr = obj.addText(LOBYTE(val));
-		if (isAddrOperand || isWordValue)
-		{
-			obj.addText(HIBYTE(val));
-
-			if (isAddrOperand)
-			{
-				addTextRelocation(addr, 1, SEG_DATA, false);
-
-				// does the symbol exist?
-				SymbolEntity se;
-				if (!obj.findSymbol(yylval.sym->lexeme, se) && yylval.sym->type != stEqu)
-				{
-					// mark the symbol as an external reference
-					yylval.sym->type = stExternal;
-
-					se.type = SET_EXTERN | SET_UNDEFINED;
-					se.value = 0;
-					obj.addSymbol(yylval.sym->lexeme, se);
-				}
-			}
-
-		}
-
-		match();
-	}
-		break;
-	
-	default:
-		yyerror("invalid memory operand!");
-	}
-
-	if (isAddrOperand)
-		match(']');
-}
-
-//
-// Parse a 16b data address or label
-//
-void AsmParser::dataAddress(int op)
-{
-	obj.addText(op);
-	match();
-
-	uint32_t val = 0;
-
-	if (lookahead == TV_INTVAL)
-	{
-		val = yylval.ival;
-	}
-	else if (lookahead == TV_ID)
-	{
-		val = yylval.sym->ival;
-	}
-	else
-	{
-		yyerror("syntax error");
-	}
-
-	auto addr = obj.addText(LOBYTE(val));
-	obj.addText(HIBYTE(val));
-
-	addTextRelocation(addr, 1, SEG_DATA, false);
-
-	match();
-}
-
-//
-// We saw a new symbol declaration. Fixup any intra-segment forward references to this symbol
-//
-void AsmParser::applyFixups(const std::string &str, uint16_t addr)
-{
-	auto iter = fixups.find(str);
-
-	// if there were no forward refs there will be no fixups
-	if (iter == fixups.end())
-		return;
-
-	for (auto i = iter->second.begin(); i != iter->second.end(); i++)
-	{
-		auto loc = *i;
-		auto rom = obj.textPtr();
-		rom[loc] = addr & 0xFF;
-		rom[loc+1] = addr >> 8;
-	}
-
-	// we are done with these fixups!
-	fixups.erase(iter);
-}
-
-//
-// We found an inferred forward reference to a symbol, add the location to fixups list
-//
-void AsmParser::addFixup(const std::string &str, uint16_t addr)
-{
-	auto iter = fixups.find(str);
-	if (iter != fixups.end())
-	{
-		iter->second.push_back(addr);
-	}
-	else
-	{
-		AddressList list;
-		list.push_back(addr);
-		fixups.insert(Fixups::value_type(str, list));
-	}
-}
-
-//
-// Parse a 16b code address or label
-//
-void AsmParser::codeAddress(int op)
-{
-	obj.addText(op);
-	match();
-
-	if (lookahead == TV_INTVAL)
-	{
-		auto val = yylval.ival;
-
-		auto addr = obj.addText(LOBYTE(val));
-		obj.addText(HIBYTE(val));
-
-		addTextRelocation(addr, 1, SEG_TEXT, false);
-
-		match();
-	}
-	else if (lookahead == TV_ID) 
-	{
-		auto val = yylval.sym->ival;
-
-		auto addr = obj.addText(LOBYTE(val));
-		obj.addText(HIBYTE(val));
-
-		// see if we have to fixup this address
-		if (yylval.sym->type == stUndef)
-			addFixup(yylval.sym->lexeme, addr);
-
-
-		auto external = yylval.sym->type == stExternal ? true : false;
-		uint32_t index = SEG_TEXT;
-		if (external)
-		{
-			// for stExternal this needs to be the index to the symbol table entry
-			index = obj.indexOfSymbol(yylval.sym->lexeme);
-			assert(index != UINT_MAX);
-		}
-
-		addTextRelocation(addr, 1, index, external);
-
-		match();
-	}
-	else 
-	{
-		yyerror("syntax error");
-	}
-}
-
-//
-// We are expecting a 16b immediate value or a named value
-//
-void AsmParser::imm16(int op)
-{
-	obj.addText(op);
-	match();
-
-	uint32_t val = 0;
-
-	if (lookahead == TV_INTVAL)
-	{
-		val = yylval.ival;
-	}
-	else if (lookahead == TV_ID)
-	{
-		if (yylval.sym->type != stEqu)
-			yyerror("EQU expected!");
-
-		val = yylval.sym->ival;
-	}
-	else
-	{
-		yyerror("invalid operand!");
-	}
-
-	obj.addText(LOBYTE(val));
-	obj.addText(HIBYTE(val));
-	match();
-
-}
-
-//
 //
 //
 void AsmParser::imm8(int op)
 {
 	obj.addText(op);
-	match();
 
 	uint32_t val = 0;
 
@@ -712,6 +504,226 @@ void AsmParser::imm8(int op)
 	}
 
 	obj.addText(LOBYTE(val));
+	match();
+}
+
+//
+// We are expecting a 16b immediate value or a named immediate value
+//
+void AsmParser::imm16(int op)
+{
+	bool bSegmentRelative = false;
+
+	obj.addText(op);
+
+	uint32_t val = 0;
+
+	if (lookahead == TV_INTVAL)
+	{
+		val = yylval.ival;
+	}
+	else if (lookahead == TV_ID)
+	{
+		val = yylval.sym->ival;
+
+		// TODO - check for stProc here?
+
+		if (yylval.sym->type != stEqu)
+			bSegmentRelative = true;
+
+		// handle undefined symbols
+		if (yylval.sym->type == stUndef)
+			yyerror("undefined symbol '%s'", yylval.sym->lexeme);
+	}
+	else
+	{
+		yyerror("invalid operand!");
+	}
+
+	auto addr = obj.addText(LOBYTE(val));
+	obj.addText(HIBYTE(val));
+
+	// if this is a data address it needs a relocation entry
+	if (bSegmentRelative)
+	{
+		auto external = yylval.sym->type == stExternal ? true : false;
+		uint32_t index = SEG_DATA;
+		if (external)
+		{
+			// for stExternal this needs to be the index to the symbol table entry
+			index = obj.indexOfSymbol(yylval.sym->lexeme);
+			assert(index != UINT_MAX);
+		}
+
+		addTextRelocation(addr, 1, index, external);
+	}
+
+	match();
+}
+
+//
+//
+//
+bool AsmParser::isDataLabel(int type)
+{
+	if (type == stDataByte || type == stDataWord || type == stDataString)
+		return true;
+	return false;
+}
+
+//
+// an immediate value or an address
+//
+void AsmParser::memOperand(int immOp, int memOp, bool isWordValue)
+{
+	bool bSegmentRelative = false;
+
+	match();
+
+	// see if this is an immediate operation
+	if (lookahead != '[')
+	{
+		if (isWordValue)
+			return imm16(immOp);
+		else
+			return imm8(immOp);
+	}
+
+	match('[');
+	obj.addText(memOp);
+
+	uint32_t val = 0;
+
+	switch (lookahead)
+	{
+	case TV_INTVAL:	// absolute addr
+		{
+			val = yylval.ival;
+		}
+		break;
+
+	case TV_ID:	// named addr
+		{
+			// value is either an immediate or an addr
+			val = yylval.sym->ival;
+
+			if (yylval.sym->type != stEqu)
+				bSegmentRelative = true;
+		}
+		break;
+	
+	default:
+		yyerror("invalid memory operand!");
+	}
+
+	auto addr = obj.addText(LOBYTE(val));
+	obj.addText(HIBYTE(val));
+
+	// if this is a data address it needs a relocation entry
+	if (bSegmentRelative)
+	{
+		auto external = yylval.sym->type == stExternal ? true : false;
+		uint32_t index = SEG_DATA;
+		if (external)
+		{
+			// for stExternal this needs to be the index to the symbol table entry
+			index = obj.indexOfSymbol(yylval.sym->lexeme);
+			assert(index != UINT_MAX);
+		}
+
+		addTextRelocation(addr, 1, index, external);
+	}
+
+	match();
+	match(']');
+}
+
+//
+// Parse a 16b data address or label
+//
+void AsmParser::dataAddress(int op)
+{
+	bool bSegmentRelative = false;
+
+	obj.addText(op);
+	match();
+
+	uint32_t val = 0;
+
+	if (lookahead == TV_INTVAL)
+	{
+		val = yylval.ival;
+	}
+	else if (lookahead == TV_ID)
+	{
+		val = yylval.sym->ival;
+		
+		if (yylval.sym->type != stEqu)
+			bSegmentRelative = true;
+	}
+	else
+	{
+		yyerror("syntax error");
+	}
+
+	auto addr = obj.addText(LOBYTE(val));
+	obj.addText(HIBYTE(val));
+
+	if (bSegmentRelative)
+		addTextRelocation(addr, 1, SEG_DATA, false);
+
+	match();
+}
+
+//
+// Parse a 16b code address or label
+//
+void AsmParser::codeAddress(int op)
+{
+	bool bSegmentRelative = false;
+
+	obj.addText(op);
+	match();
+
+	uint32_t val = 0;
+
+	if (lookahead == TV_INTVAL)
+	{
+		val = yylval.ival;
+	}
+	else if (lookahead == TV_ID) 
+	{
+		val = yylval.sym->ival;
+
+		if (yylval.sym->type != stEqu)
+			bSegmentRelative = true;
+	}
+	else 
+	{
+		yyerror("syntax error");
+	}
+
+	auto addr = obj.addText(LOBYTE(val));
+	obj.addText(HIBYTE(val));
+
+	// see if we have to fixup a forward address
+	if (yylval.sym->type == stUndef)
+		addFixup(yylval.sym->lexeme, addr);
+
+	if (bSegmentRelative)
+	{
+		auto external = yylval.sym->type == stExternal ? true : false;
+		uint32_t index = SEG_TEXT;
+		if (external)
+		{
+			// for stExternal this needs to be the index to the symbol table entry
+			index = obj.indexOfSymbol(yylval.sym->lexeme);
+			assert(index != UINT_MAX);
+		}
+
+		addTextRelocation(addr, 1, index, external);
+	}
+
 	match();
 }
 
@@ -843,6 +855,7 @@ void AsmParser::file()
 			break;
 
 		case TV_LEAX:
+			match();
 			imm8(OP_LEAX);
 			break;
 			

@@ -4,16 +4,37 @@
 
 AoutFile::AoutFile()
 {
-	// init file header properties
-	memset(&file_header, 0, sizeof(file_header));
-
-	// default to NMAGIC format?
-	file_header.a_magic = 263;
+	clear();
 }
 
 AoutFile::~AoutFile()
 {
 
+}
+
+//
+//
+//
+void AoutFile::clear()
+{
+	// init file header properties
+	memset(&file_header, 0, sizeof(file_header));
+
+	// default to NMAGIC format?
+	file_header.a_magic = 263;
+
+	text_segment.clear();
+	data_segment.clear();
+
+	textRelocs.clear();
+	dataRelocs.clear();
+
+	symbolTable.clear();
+	symbolLookup.clear();
+
+	stringTable.clear();
+
+	textBase = dataBase = bssBase = 0;
 }
 
 //
@@ -51,14 +72,14 @@ void AoutFile::concat(const AoutFile *rhs)
 	file_header.a_drsize += rhs->file_header.a_drsize;
 	file_header.a_trsize += rhs->file_header.a_trsize;
 
-	// TODO - we can only set this after we've merged symbols
-	//file_header.a_syms += rhs->file_header.a_syms;
-	
 	// merge segments
 	text_segment.insert(text_segment.end(), rhs->text_segment.begin(), rhs->text_segment.end());
 	data_segment.insert(data_segment.end(), rhs->data_segment.begin(), rhs->data_segment.end());
 
 	// merge symbols
+
+	// TODO - we can only set this after we've merged symbols
+	//file_header.a_syms += rhs->file_header.a_syms;
 
 	// merge relocations updating addresses
 }
@@ -66,11 +87,13 @@ void AoutFile::concat(const AoutFile *rhs)
 //
 //
 //
-void AoutFile::relocate(const std::vector<AoutFile*> &modules)
+bool AoutFile::relocate(const std::vector<AoutFile*> &modules)
 {
 	// for each relocation
 	for (auto it = textRelocs.begin(); it != textRelocs.end(); it++)
 	{
+		int iSymbolFound = 0;
+
 		if (it->external)
 		{
 			auto name = symbolTable[it->index].first;
@@ -81,18 +104,44 @@ void AoutFile::relocate(const std::vector<AoutFile*> &modules)
 			SymbolEntity externSym;
 			for (auto moduleIter = modules.begin(); moduleIter != modules.end(); moduleIter++)
 			{
-				auto module = (*moduleIter);
 				// look for the symbol in the module
+				auto module = (*moduleIter);
 				if (module->findSymbol(name, externSym))
 				{
 					// see if it is defined in this module
-					if (externSym.type & SET_TEXT && !(externSym.type & SET_UNDEFINED))
+					if (!(externSym.type & SET_UNDEFINED))
 					{
-						auto addr = module->getTextBase() + externSym.value;
-						text_segment[it->address] = LOBYTE(addr);
-						text_segment[it->address + 1] = HIBYTE(addr);
+						if (externSym.type & SET_TEXT)
+						{
+							auto addr = module->getTextBase() + externSym.value;
+							text_segment[it->address] = LOBYTE(addr);
+							text_segment[it->address + 1] = HIBYTE(addr);
+							iSymbolFound++;
+						} 
+						else if (externSym.type & SET_DATA)
+						{
+							auto addr = module->getDataBase() + externSym.value;
+							text_segment[it->address] = LOBYTE(addr);
+							text_segment[it->address + 1] = HIBYTE(addr);
+							iSymbolFound++;
+						}
+						else
+						{
+							assert(false);
+						}
 					}
 				}
+			}
+
+			if (0 == iSymbolFound)
+			{
+				fprintf(stderr, "Error: Symbol %s not found!\n", name.c_str());
+				return false;
+			}
+			else if (iSymbolFound > 1)
+			{
+				fprintf(stderr, "Error: Symbol %s multiply defined!\n", name.c_str());
+				return false;
 			}
 		}
 		else
@@ -104,7 +153,8 @@ void AoutFile::relocate(const std::vector<AoutFile*> &modules)
 			text_segment[it->address + 1] = HIBYTE(addr);
 		}
 	}
-
+	
+	return true;
 }
 
 int AoutFile::writeFile(const std::string &name)
@@ -186,6 +236,8 @@ int AoutFile::readFile(FILE *fptr)
 	assert(fptr != nullptr);
 	if (fptr == nullptr)
 		return -1;
+
+	clear();
 
 	// read the header
 	auto result = fread(&file_header, sizeof(file_header), 1, fptr);

@@ -58,9 +58,13 @@ int main(int argc, char* argv[])
 	
 	std::vector<AoutFile*> files;
 
+	fprintf(stdout, "Linking...\n");
+
 	// loop over and load the input files
 	for (int i = iFirstArg; i < argc; i++)
 	{
+		fprintf(stdout, "%s\n", argv[i]);
+
 		AoutFile *pObj = new AoutFile();
 		FILE *f = fopen(argv[i], "rb");
 			pObj->readFile(f);
@@ -69,7 +73,7 @@ int main(int argc, char* argv[])
 		files.push_back(pObj);
 	}
 	
-	// possible adjust base address...
+	// possibly adjust base address...
 	files[0]->setTextBase(g_bBaseAddr);
 
 	// compute segment starts
@@ -95,16 +99,18 @@ int main(int argc, char* argv[])
 		files[i]->relocate(files);
 	}
 
-	// merge the segments
+	// merge the segments (AND the symbols!)
 	for (size_t i = 1; i < files.size(); i++)
 	{
 		files[0]->concat(files[i]);
 	}
 
-	// TODO - set the entry point
+	// TODO - set the entry point?
 
 	// write the output file
 	files[0]->writeFile(g_szOutputFilename);
+
+	fprintf(stdout, "Linking complete -> %s\b", g_szOutputFilename);
 
 	return 0;
 }

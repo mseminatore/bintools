@@ -119,6 +119,8 @@ public:
 	AoutFile();
 	virtual ~AoutFile();
 
+	void clear();
+
 	void concat(const AoutFile *rhs);
 
 	int writeFile(FILE *fptr);
@@ -158,7 +160,7 @@ public:
 	// relocations
 	void addTextRelocation(RelocationEntry&);
 	void addDataRelocation(RelocationEntry&);
-	void relocate(const std::vector<AoutFile*>&);
+	bool relocate(const std::vector<AoutFile*>&);
 
 	// debug output
 	void dumpHeader(FILE*);

@@ -4,6 +4,7 @@
 #include "../cpu_cisc.h"
 #include <stdio.h>
 #include <stdarg.h>
+#include <vector>
 
 #define SETF(flag) (CC |= flag)
 #define CLRF(flag) (CC &= ~flag)
@@ -28,6 +29,11 @@ protected:
 
 	void pushRegs();
 	void popRegs();
+
+	using BreakpointList = std::vector<uint32_t>;
+	BreakpointList breakpoints;
+
+	AoutFile obj;
 
 public:
 	Cisc() {
@@ -79,8 +85,6 @@ public:
 //
 void Cisc::load(const std::string &filename)
 {
-	AoutFile obj;
-
 	FILE *f = fopen(filename.c_str(), "rb");
 	if (!f)
 		return;

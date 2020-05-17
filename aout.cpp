@@ -63,7 +63,7 @@ bool AoutFile::findSymbol(const std::string &name, SymbolEntity &sym)
 //
 //
 //
-void AoutFile::concat(const AoutFile *rhs)
+void AoutFile::concat(AoutFile *rhs)
 {
 	// combine headers
 	file_header.a_bss += rhs->file_header.a_bss;
@@ -77,6 +77,32 @@ void AoutFile::concat(const AoutFile *rhs)
 	data_segment.insert(data_segment.end(), rhs->data_segment.begin(), rhs->data_segment.end());
 
 	// merge symbols
+	for (auto it = rhs->symbolTable.begin(); it != rhs->symbolTable.end(); it++)
+	{
+		// see if the rhs symbol exists in this module
+		SymbolEntity se;
+		if (findSymbol(it->first, se) && (se.type & SET_UNDEFINED))
+		{
+			auto index = indexOfSymbol(it->first);
+			assert(index != UINT_MAX);
+
+			auto sym = &symbolTable[index].second;
+
+			// if it does and it is defined in rhs module, then update it
+			sym->type = it->second.type;
+
+			if (sym->type & SET_TEXT)
+				sym->value = it->second.value + rhs->getTextBase();
+			else 
+				sym->value = it->second.value + rhs->getDataBase();
+		}
+		else
+		{
+			// if not and it is defined in rhs module, then add it
+			if (!(it->second.type & SET_UNDEFINED))
+				addSymbol(it->first, it->second);
+		}
+	}
 
 	// TODO - we can only set this after we've merged symbols
 	//file_header.a_syms += rhs->file_header.a_syms;
@@ -111,13 +137,14 @@ bool AoutFile::relocate(const std::vector<AoutFile*> &modules)
 					// see if it is defined in this module
 					if (!(externSym.type & SET_UNDEFINED))
 					{
+						// it is defined in this module
 						if (externSym.type & SET_TEXT)
 						{
 							auto addr = module->getTextBase() + externSym.value;
 							text_segment[it->address] = LOBYTE(addr);
 							text_segment[it->address + 1] = HIBYTE(addr);
 							iSymbolFound++;
-						} 
+						}
 						else if (externSym.type & SET_DATA)
 						{
 							auto addr = module->getDataBase() + externSym.value;

@@ -121,7 +121,7 @@ public:
 
 	void clear();
 
-	void concat(const AoutFile *rhs);
+	void concat(AoutFile *rhs);
 
 	int writeFile(FILE *fptr);
 	int writeFile(const std::string &name);

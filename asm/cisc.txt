@@ -10,16 +10,21 @@ R - A, X, PC
 | NOP           | no effect                       | 
 | ADD imm8      | A <- A + imm8                   |  
 | SUB imm8      | A <- A - imm8                   |  
-| ADD imm16     | X <- X + imm16                  |  
-| SUB imm16     | X <- X - imm16                  |  
-| JSR addr      | SP <- PC; SP--; PC <- addr      |  
-| PUSH R        | SP <- R; SP--                   |  
-| POP R         |                                 |  
+| CALL addr     | SP <- PC; SP--; PC <- addr      |  
+| PUSH R+       | SP <- R; SP--                   |  
+| POP R+        |                                 |  
 | JMP addr      | PC <- addr                      |  
-| ADX           | X <- A + X
 | RET
+| RTI
+| ADX           | X <- A + X
+| LAX           | A <- [X]
+| LXX           | X <- [X]
+| LEAX imm8     | X <- X + imm8
 | LDA imm8
 | LDX imm16
+| STA
+| STX
+| STAX
 | AND
 | OR
 | XOR

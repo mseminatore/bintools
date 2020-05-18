@@ -93,6 +93,7 @@ class AoutFile : public ObjectFile
 {
 protected:
 	AOUT_HEADER file_header;
+	std::string filename;
 
 	using Segment = std::vector<uint8_t>;
 		

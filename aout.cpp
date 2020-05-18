@@ -162,12 +162,12 @@ bool AoutFile::relocate(const std::vector<AoutFile*> &modules)
 
 			if (0 == iSymbolFound)
 			{
-				fprintf(stderr, "Error: Symbol %s not found!\n", name.c_str());
+				fprintf(stderr, "Error: Symbol '%s' not found!\n", name.c_str());
 				return false;
 			}
 			else if (iSymbolFound > 1)
 			{
-				fprintf(stderr, "Error: Symbol %s multiply defined!\n", name.c_str());
+				fprintf(stderr, "Error: Symbol '%s' multiply defined!\n", name.c_str());
 				return false;
 			}
 		}
@@ -192,6 +192,8 @@ int AoutFile::writeFile(const std::string &name)
 
 	auto result = writeFile(f);
 	fclose(f);
+
+	filename = name;
 
 	return result;
 }
@@ -254,6 +256,8 @@ int AoutFile::readFile(const std::string &name)
 
 	auto result = readFile(f);
 	fclose(f);
+
+	filename = name;
 
 	return result;
 }
@@ -355,9 +359,13 @@ void AoutFile::addSymbol(const std::string &name, SymbolEntity &sym)
 {
 	auto it = symbolLookup.find(name);
 
-	// TODO - return if symbol already exists??
+	// if symbol already exists as an EXTERN, update it since it is now defined
 	if (it != symbolLookup.end())
+	{
+		symbolTable[it->second].second.type = sym.type;
+		symbolTable[it->second].second.value = sym.value;
 		return;
+	}
 
 	uint32_t offset = addString(name);
 	sym.nameOffset = offset;

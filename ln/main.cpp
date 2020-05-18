@@ -96,7 +96,11 @@ int main(int argc, char* argv[])
 	// do relocs and inter-segment fixups
 	for (size_t i = 0; i < files.size(); i++)
 	{
-		files[i]->relocate(files);
+		if (!files[i]->relocate(files))
+		{
+			fprintf(stdout, "Linking failed.\n");
+			exit(-1);
+		}
 	}
 
 	// merge the segments (AND the symbols!)
@@ -110,7 +114,7 @@ int main(int argc, char* argv[])
 	// write the output file
 	files[0]->writeFile(g_szOutputFilename);
 
-	fprintf(stdout, "Linking complete -> %s\b", g_szOutputFilename);
+	fprintf(stdout, "Linking complete -> %s\n", g_szOutputFilename);
 
 	return 0;
 }

@@ -78,6 +78,7 @@ public:
 	bool getSymbolAddress(const std::string &name, uint16_t &addr);
 	void addBreakpoint(uint16_t addr) { breakpoints.insert(addr); }
 
+	void listBreakpoints();
 	bool setBreakpoint(const std::string &name)
 	{
 		uint16_t addr = 0;
@@ -110,6 +111,17 @@ public:
 		printf("%d (0x%04X): %d (0x%04X)\n", addr, addr, ram[addr], ram[addr]);
 	}
 };
+
+//
+//
+//
+void Cisc::listBreakpoints()
+{
+	for (auto it = breakpoints.begin(); it != breakpoints.end(); it++)
+	{
+		printf("breakpoint @ 0x%04X\n", *it);
+	}
+}
 
 //
 //
@@ -679,7 +691,11 @@ int main(int argc, char* argv[])
 			else if (!strcmp(pToken, "b"))
 			{
 				auto tok = strtok(nullptr, " \n");
-				cpu.setBreakpoint(tok);
+
+				if (tok)
+					cpu.setBreakpoint(tok);
+				else
+					cpu.listBreakpoints();
 			}
 			else if (!strcmp(pToken, "d"))
 			{

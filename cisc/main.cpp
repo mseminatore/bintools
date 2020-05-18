@@ -4,8 +4,12 @@
 #include "../cpu_cisc.h"
 #include <stdio.h>
 #include <stdarg.h>
-#include <vector>
+//#include <vector>
+#include <set>
 
+//
+//
+//
 #define SETF(flag) (CC |= flag)
 #define CLRF(flag) (CC &= ~flag)
 #define TSTF(flag) (CC ^ flag) 
@@ -30,7 +34,7 @@ protected:
 	void pushRegs();
 	void popRegs();
 
-	using BreakpointList = std::vector<uint32_t>;
+	using BreakpointList = std::set<uint32_t>;
 	BreakpointList breakpoints;
 
 	AoutFile obj;
@@ -69,6 +73,33 @@ public:
 	void tick();
 	void interrupt(uint32_t vector);
 
+	// breakpoints
+	uint16_t getPC() { return PC; }
+	bool getSymbolAddress(const std::string &name, uint16_t &addr);
+	void addBreakpoint(uint16_t addr) { breakpoints.insert(addr); }
+
+	bool setBreakpoint(const std::string &name)
+	{
+		uint16_t addr = 0;
+		if (getSymbolAddress(name, addr))
+		{
+			addBreakpoint(addr);
+			log("breakpoint @ 0x%04X", addr);
+
+			return true;
+		}
+		
+		return false;
+	}
+
+	bool isBreakpoint(uint16_t addr)
+	{
+		if (breakpoints.find(addr) != breakpoints.end())
+			return true;
+		
+		return false;
+	}
+
 	void printRegisters()
 	{
 		printf("A = %02X X = %04X CC = %02X SP = %04X PC = %04X\n", A, X, CC, SP, PC);
@@ -79,6 +110,20 @@ public:
 		printf("%d (0x%04X): %d (0x%04X)\n", addr, addr, ram[addr], ram[addr]);
 	}
 };
+
+//
+//
+//
+bool Cisc::getSymbolAddress(const std::string &name, uint16_t &addr)
+{
+	SymbolEntity se;
+
+	if (!obj.findSymbol(name, se))
+		return false;
+
+	addr = se.value;
+	return true;
+}
 
 //
 //
@@ -146,7 +191,7 @@ void Cisc::log(const char *fmt, ...)
 		vsprintf(buf, fmt, argptr);
 	va_end(argptr);
 
-	printf("\n%s\n", buf);
+	printf("%s\n", buf);
 }
 
 //
@@ -602,6 +647,7 @@ int getopt(int n, char *args[])
 int main(int argc, char* argv[])
 {
 	bool done = false;
+	bool singleStep = true;
 	char buf[256];
 
 	if (argc == 1)
@@ -615,32 +661,58 @@ int main(int argc, char* argv[])
 
 	while (!done)
 	{
-		printf(">");
-		fgets(buf, 255, stdin);
-
-		char *pToken = strtok(buf, " \n");
-		if (!pToken)
-			cpu.tick();
-		else if (!strcmp(pToken, "r"))
-			cpu.printRegisters();
-		else if (!strcmp(pToken, "d"))
+		if (singleStep)
 		{
-			auto tok = strtok(nullptr, " \n");
-			uint32_t addr = 0;
-			auto base = 10;
-			if (tok)
-			{
-				if (tok[0] == '$')
-				{
-					base = 16;
-					tok++;
-				}
-				addr = strtoul(tok, nullptr, base);
+			printf(">");
+			fgets(buf, 255, stdin);
 
-				cpu.printMemory(addr);
+			char *pToken = strtok(buf, " \n");
+			if (!strcmp(pToken, "s"))
+				cpu.tick();
+			else if (!strcmp(pToken, "r"))
+				cpu.printRegisters();
+			else if (!strcmp(pToken, "g"))
+			{
+				singleStep = false;
+				cpu.tick();
+			}
+			else if (!strcmp(pToken, "b"))
+			{
+				auto tok = strtok(nullptr, " \n");
+				cpu.setBreakpoint(tok);
+			}
+			else if (!strcmp(pToken, "d"))
+			{
+				auto tok = strtok(nullptr, " \n");
+				uint32_t addr = 0;
+				auto base = 10;
+				if (tok)
+				{
+					if (tok[0] == '$')
+					{
+						base = 16;
+						tok++;
+					}
+					addr = strtoul(tok, nullptr, base);
+
+					cpu.printMemory(addr);
+				}
 			}
 		}
-
+		else
+		{
+			while (!singleStep)
+			{ 
+				auto pc = cpu.getPC();
+				if (cpu.isBreakpoint(pc))
+				{
+					fprintf(stdout, "hit breakpoint @ 0x%04X\n", pc);
+					singleStep = true;
+				}
+				else
+					cpu.tick();
+			}
+		}
 		
 	}
 

@@ -483,11 +483,14 @@ void AoutFile::hexDumpSegment(FILE *f, uint8_t *seg, size_t size)
 		offset += 16;
 	}
 
-	// TODO - we fail to print the last (partial) line!
-	//for (size_t i = 0; i < size % 16; i++)
-	//{
+	// if we finished on a full line then we are done!
+	if (0 == (size % 16))
+		return;
 
-	//}
+	// otherwise we need to print the last (partial) line
+	uint8_t lastLine[16] = { 0 };
+	memcpy(lastLine, &seg[offset], size % 16);
+	hexDumpLine(f, offset, lastLine);
 }
 
 void AoutFile::dumpText(FILE *f)

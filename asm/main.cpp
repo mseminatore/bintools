@@ -81,6 +81,7 @@ enum
 	TV_STAX,
 	TV_LAX,
 	TV_LEAX,
+	TV_LXX,
 
 	TV_A,
 	TV_X,
@@ -95,8 +96,6 @@ enum
 	TV_EQU,
 	TV_ORG,
 
-	TV_CMP,
-
 	TV_CALL,
 	TV_RET,
 	TV_JMP,
@@ -108,6 +107,8 @@ enum
 	TV_OR,
 	TV_XOR,
 	TV_NOT,
+	TV_COM,
+	TV_NEG,
 
 	TV_PUSH,
 	TV_POP,
@@ -132,8 +133,6 @@ TokenTable _tokenTable[] =
 	{ "NOT",	TV_NOT },
 	{ "XOR",	TV_XOR },
 
-	{ "CMP",	TV_CMP },
-
 	{ "CALL",	TV_CALL },
 	{ "JMP",	TV_JMP },
 	{ "JNE",	TV_JNE },
@@ -154,6 +153,7 @@ TokenTable _tokenTable[] =
 	{ "LDX",	TV_LDX },
 	{ "LAX",	TV_LAX },
 	{ "LEAX",	TV_LEAX },
+	{ "LXX",	TV_LXX },
 
 	{ "A",		TV_A },
 	{ "X",		TV_X },
@@ -339,6 +339,8 @@ void AsmParser::dataString(SymbolEntry *sym)
 		obj.addSymbol(sym->lexeme, se);
 	}
 
+	yylval.sym->isReferenced = true;
+
 	match(TV_STRING);
 }
 
@@ -382,6 +384,7 @@ void AsmParser::label()
 			sym->type = stEqu;
 			match();
 		}
+		sym->isReferenced = true;
 		break;
 
 	case TV_DB:
@@ -496,6 +499,8 @@ void AsmParser::imm8(int op)
 		if (yylval.sym->type != stEqu)
 			yyerror("EQU expected!");
 
+		yylval.sym->isReferenced = true;
+
 		val = yylval.sym->ival;
 	}
 	else
@@ -525,6 +530,7 @@ void AsmParser::imm16(int op)
 	else if (lookahead == TV_ID)
 	{
 		val = yylval.sym->ival;
+		yylval.sym->isReferenced = true;
 
 		// TODO - check for stProc here?
 
@@ -606,6 +612,7 @@ void AsmParser::memOperand(int immOp, int memOp, bool isWordValue)
 		{
 			// value is either an immediate or an addr
 			val = yylval.sym->ival;
+			yylval.sym->isReferenced = true;
 
 			if (yylval.sym->type != stEqu)
 				bSegmentRelative = true;
@@ -657,7 +664,8 @@ void AsmParser::dataAddress(int op)
 	else if (lookahead == TV_ID)
 	{
 		val = yylval.sym->ival;
-		
+		yylval.sym->isReferenced = true;
+
 		if (yylval.sym->type != stEqu)
 			bSegmentRelative = true;
 	}
@@ -694,6 +702,8 @@ void AsmParser::codeAddress(int op)
 	else if (lookahead == TV_ID) 
 	{
 		val = yylval.sym->ival;
+
+		yylval.sym->isReferenced = true;
 
 		if (yylval.sym->type != stEqu)
 			bSegmentRelative = true;
@@ -733,6 +743,7 @@ void AsmParser::codeAddress(int op)
 void AsmParser::include()
 {
 	match(TV_INCLUDE);
+		yylval.sym->isReferenced = true;
 		m_lexer->pushFile(yylval.sym->lexeme.c_str());
 	match(TV_STRING);
 }
@@ -772,6 +783,7 @@ void AsmParser::file()
 
 			yylval.sym->type = stProc;
 			yylval.sym->global = true;
+			yylval.sym->isReferenced = true;
 
 			se.type = SET_TEXT;
 			se.value = obj.getTextSize();
@@ -824,28 +836,17 @@ void AsmParser::file()
 			memOperand(OP_XORI, OP_XOR);
 			break;
 
-		case TV_CMP:
-			memOperand(OP_CMPI, OP_CMP);
-			break;
-
+		// loads
 		case TV_LDA:
 			memOperand(OP_LDAI, OP_LDA);
-			break;
-
-		case TV_STA:
-			dataAddress(OP_STA);
 			break;
 
 		case TV_LDX:
 			memOperand(OP_LDXI, OP_LDX, true);
 			break;
-		
-		case TV_STX:
-			dataAddress(OP_STX);
-			break;
 
-		case TV_STAX:
-			obj.addText(OP_STAX);
+		case TV_LXX:
+			obj.addText(OP_LXX);
 			match();
 			break;
 
@@ -858,7 +859,22 @@ void AsmParser::file()
 			match();
 			imm8(OP_LEAX);
 			break;
-			
+
+		// stores
+		case TV_STA:
+			dataAddress(OP_STA);
+			break;
+		
+		case TV_STX:
+			dataAddress(OP_STX);
+			break;
+
+		case TV_STAX:
+			obj.addText(OP_STAX);
+			match();
+			break;
+
+		// stack
 		case TV_PUSH:
 			obj.addText(OP_PUSH);
 			match();
@@ -873,6 +889,7 @@ void AsmParser::file()
 			obj.addText(regSet());
 			break;
 
+		// branches
 		case TV_JMP:
 			codeAddress(OP_JMP);
 			break;
@@ -900,7 +917,7 @@ void AsmParser::file()
 			break;
 
 		default:
-			yyerror("syntax error!");
+			yyerror("unrecognized assembly instruction!");
 		}
 	}
 }

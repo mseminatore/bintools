@@ -216,21 +216,21 @@ void Cisc::pushRegs()
 
 	if (operand & REG_PC)
 	{
-		push(LOBYTE(PC));
 		push(HIBYTE(PC));
+		push(LOBYTE(PC));
 	}
 
 	if (operand & REG_SP)
 	{
 		addr = SP;
-		push(LOBYTE(addr));
 		push(HIBYTE(addr));
+		push(LOBYTE(addr));
 	}
 
 	if (operand & REG_X)
 	{
-		push(LOBYTE(X));
 		push(HIBYTE(X));
+		push(LOBYTE(X));
 	}
 
 	if (operand & REG_A)
@@ -259,17 +259,17 @@ void Cisc::popRegs()
 
 	if (operand & REG_X)
 	{
-		X = (pop() << 8) | pop();
+		X = pop() | (pop() << 8);
 	}
 
 	if (operand & REG_SP)
 	{
-		SP = (pop() << 8) | pop();
+		SP = pop() | (pop() << 8);
 	}
 
 	if (operand & REG_PC)
 	{
-		PC = (pop() << 8) | pop();
+		PC = pop() | (pop() << 8);
 	}
 
 	std::string s;
@@ -362,12 +362,20 @@ void Cisc::exec()
 		addr = fetchW();
 		A = A & ram[addr];
 
+		updateFlag(A == 0, FLAG_Z);
+		updateFlag(A & 0x80, FLAG_N);
+		updateFlag(0, FLAG_V);
+
 		log("AND [0x%X]", addr);
 		break;
 	
 	case OP_ANDI:
 		operand = fetch();
 		A = A & operand;
+
+		updateFlag(A == 0, FLAG_Z);
+		updateFlag(A & 0x80, FLAG_N);
+		updateFlag(0, FLAG_V);
 
 		log("AND %d", operand);
 		break;
@@ -376,12 +384,20 @@ void Cisc::exec()
 		addr = fetchW();
 		A = A | ram[addr];
 
+		updateFlag(A == 0, FLAG_Z);
+		updateFlag(A & 0x80, FLAG_N);
+		updateFlag(0, FLAG_V);
+
 		log("OR [0x%X]", addr);
 		break;
 
 	case OP_ORI:
 		operand = fetch();
 		A = A | operand;
+
+		updateFlag(A == 0, FLAG_Z);
+		updateFlag(A & 0x80, FLAG_N);
+		updateFlag(0, FLAG_V);
 
 		log("OR %d", operand);
 		break;
@@ -390,12 +406,20 @@ void Cisc::exec()
 		addr = fetchW();
 		A = A % ram[addr];
 
+		updateFlag(A == 0, FLAG_Z);
+		updateFlag(A & 0x80, FLAG_N);
+		updateFlag(0, FLAG_V);
+
 		log("XOR [0x%X]", addr);
 		break;
 
 	case OP_XORI:
 		operand = fetch();
 		A = A % operand;
+
+		updateFlag(A == 0, FLAG_Z);
+		updateFlag(A & 0x80, FLAG_N);
+		updateFlag(0, FLAG_V);
 
 		log("XOR %d", operand);
 		break;
@@ -478,18 +502,43 @@ void Cisc::exec()
 	case OP_LDX:
 		addr = fetchW();
 		X = ram[addr] + (ram[addr + 1] << 8);
+
+		updateFlag(X == 0, FLAG_Z);
+		updateFlag(X & 0x8000, FLAG_N);
+		updateFlag(0, FLAG_V);
+
 		log("LDX [0x%X]", addr);
 		break;
 
 	case OP_LDXI:
 		X = fetchW();
+
+		updateFlag(X == 0, FLAG_Z);
+		updateFlag(X & 0x8000, FLAG_N);
+		updateFlag(0, FLAG_V);
+
 		log("LDX %d", X);
 		break;
 
 	case OP_LEAX:
 		operand = fetch();
 		X = (int)X + (char)operand;
-		log("LEAX %d", operand);
+
+		updateFlag(X == 0, FLAG_Z);
+		updateFlag(X & 0x8000, FLAG_N);
+		updateFlag(0, FLAG_V);
+
+		log("LEAX %d", (char)operand);
+		break;
+
+	case OP_LXX:
+		X = ram[X] + (ram[X + 1] << 8);
+
+		updateFlag(X == 0, FLAG_Z);
+		updateFlag(X & 0x8000, FLAG_N);
+		updateFlag(0, FLAG_V);
+
+		log("LXX");
 		break;
 
 	case OP_STA:

@@ -174,8 +174,16 @@ bool AoutFile::relocate(const std::vector<AoutFile*> &modules)
 		else
 		{
 			// address is in this segment, calculate absolute addr and patch it in
-			auto addr = textBase + text_segment[it->address] + (text_segment[it->address + 1] << 8);
-			
+			uint32_t addr = 0;
+			if (it->index == SEG_TEXT)
+			{
+				addr = textBase + text_segment[it->address] + (text_segment[it->address + 1] << 8);
+			}
+			else if (it->index == SEG_DATA)
+			{
+				addr = dataBase + text_segment[it->address] + (text_segment[it->address + 1] << 8);
+			}
+
 			text_segment[it->address] = LOBYTE(addr);
 			text_segment[it->address + 1] = HIBYTE(addr);
 		}

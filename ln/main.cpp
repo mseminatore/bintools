@@ -66,9 +66,7 @@ int main(int argc, char* argv[])
 		fprintf(stdout, "%s\n", argv[i]);
 
 		AoutFile *pObj = new AoutFile();
-		FILE *f = fopen(argv[i], "rb");
-			pObj->readFile(f);
-		fclose(f);
+		pObj->readFile(argv[i]);
 
 		files.push_back(pObj);
 	}
@@ -110,6 +108,7 @@ int main(int argc, char* argv[])
 	}
 
 	// TODO - set the entry point?
+	files[0]->setEntryPoint(g_bBaseAddr);
 
 	// write the output file
 	files[0]->writeFile(g_szOutputFilename);

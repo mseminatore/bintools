@@ -100,14 +100,55 @@ void AoutFile::concat(AoutFile *rhs)
 		{
 			// if not and it is defined in rhs module, then add it
 			if (!(it->second.type & SET_UNDEFINED))
-				addSymbol(it->first, it->second);
+			{
+				auto sym = it->second;
+				if (it->second.type & SET_TEXT)
+					sym.value = it->second.value + rhs->getTextBase();
+				else
+					sym.value = it->second.value + rhs->getDataBase();
+
+				addSymbol(it->first, sym);
+			}
 		}
 	}
 
-	// TODO - we can only set this after we've merged symbols
-	//file_header.a_syms += rhs->file_header.a_syms;
+	// fixup locations in the lhs module
+	for (auto it = textRelocs.begin(); it != textRelocs.end(); it++)
+	{
+		if (it->external)
+		{
+			// look up the symbol
+			auto sym = &symbolTable[it->index].second;
+
+			// if the symbol has been resolved for this module, fixup the address, index and external flags
+			if (!(sym->type & SET_EXTERN))
+			{
+				it->address = sym->value;
+				it->external = 0;
+
+				if (sym->type & SET_TEXT)
+					it->index = SEG_TEXT;
+				else 
+					it->index = SEG_DATA;
+			}
+		}
+	}
 
 	// merge relocations updating addresses
+	for (auto it = rhs->textRelocs.begin(); it != rhs->textRelocs.end(); it++)
+	{
+		if (it->external)
+			continue;
+
+		auto re = *it;
+
+		if (it->index == SEG_TEXT)
+			re.address += rhs->getTextBase();
+		else
+			re.address += rhs->getDataBase();
+
+		textRelocs.push_back(re);
+	}
 }
 
 //

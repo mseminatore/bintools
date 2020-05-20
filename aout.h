@@ -137,6 +137,7 @@ public:
 	uint32_t getTextSize() { return text_segment.size(); }
 	uint32_t getDataSize() { return data_segment.size(); }
 	uint32_t getBssSize() { return file_header.a_bss; }
+	uint32_t getEntryPoint() { return file_header.a_entry; }
 
 	void setTextBase(uint32_t base) { textBase = base; }
 	void setDataBase(uint32_t base) { dataBase = base; }

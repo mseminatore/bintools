@@ -142,11 +142,9 @@ bool Cisc::getSymbolAddress(const std::string &name, uint16_t &addr)
 //
 void Cisc::load(const std::string &filename)
 {
-	FILE *f = fopen(filename.c_str(), "rb");
-	if (!f)
-		return;
+	obj.readFile(filename);
 
-	obj.readFile(f);
+	PC = obj.getEntryPoint();
 
 	// populate ram
 	memset(ram, 0, 0xFFFF);
@@ -155,8 +153,6 @@ void Cisc::load(const std::string &filename)
 	// populate rom
 	memset(rom, 0, 0xFFFF);
 	memcpy(rom, obj.textPtr(), obj.getTextSize());
-
-	fclose(f);
 }
 
 //

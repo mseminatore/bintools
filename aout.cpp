@@ -562,8 +562,8 @@ void AoutFile::dumpData(FILE *f)
 	if (f == nullptr)
 		return;
 
-	fprintf(f, "Data segment (hex)\n");
-	fprintf(f, "------------------\n\n");
+	fprintf(f, ".data segment (hex)\n");
+	fprintf(f, "-------------------\n\n");
 
 	Segment::value_type *pData = data_segment.data();
 	hexDumpSegment(f, data_segment.data(), data_segment.size());
@@ -576,14 +576,17 @@ void AoutFile::dumpTextRelocs(FILE *f)
 	if (f == nullptr)
 		return;
 
-	fprintf(f, "Text segment relocations\n");
-	fprintf(f, "------------------------\n\n");
+	fprintf(f, ".text segment relocations\n");
+	fprintf(f, "-------------------------\n\n");
 
 	auto iter = textRelocs.begin();
 	for (;iter != textRelocs.end(); iter++)
 	{
 		auto re = *iter;
-		fprintf(f, "address: 0x%04X, external: %d, size: %d\n", re.address, re.external, 1 << re.length);
+		if (re.external)
+			fprintf(f, "%04X\tsize: %d (bytes)\tExternal\t%s\n", re.address, 1 << re.length, symbolTable[re.index].first.c_str());
+		else
+			fprintf(f, "%04X\tsize: %d (bytes)\tSegment: %s\n", re.address, 1 << re.length, re.index == SEG_TEXT ? ".text" : ".data");
 	}
 
 	fputc('\n', f);
@@ -602,7 +605,7 @@ void AoutFile::dumpDataRelocs(FILE *f)
 	for (; iter != dataRelocs.end(); iter++)
 	{
 		auto re = *iter;
-		fprintf(f, "address: 0x%04X, external: %d, size: %d\n", re.address, re.external, 1 << re.length);
+		fprintf(f, "%04X\texternal: %d\tsize: %d (bytes)\n", re.address, re.external, 1 << re.length);
 	}
 
 	fputc('\n', f);
@@ -634,6 +637,6 @@ void AoutFile::dumpSymbols(FILE *f)
 		if (sym.second.type & SET_UNDEFINED)
 			type += " external";
 
-		fprintf(f, "name: %s,%s, segment offset: %d (0x%04X)\n", sym.first.c_str(), type.c_str(), sym.second.value, sym.second.value);
+		fprintf(f, "%15s\t%s segment offset: %d (0x%04X)\n", sym.first.c_str(), type.c_str(), sym.second.value, sym.second.value);
 	}
 }

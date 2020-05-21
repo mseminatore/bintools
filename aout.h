@@ -122,7 +122,10 @@ public:
 
 	void clear();
 
-	void concat(AoutFile *rhs);
+	bool isValid() 
+	{ 
+		return file_header.a_magic == 263 && file_header.a_text > 0;
+	}
 
 	int writeFile(FILE *fptr);
 	int writeFile(const std::string &name);
@@ -163,6 +166,7 @@ public:
 	void addTextRelocation(RelocationEntry&);
 	void addDataRelocation(RelocationEntry&);
 	bool relocate(const std::vector<AoutFile*>&);
+	void concat(AoutFile *rhs);
 
 	// debug output
 	void dumpHeader(FILE*);

@@ -130,7 +130,14 @@ void main(int argc, char *argv[])
 
 	a.readFile(argv[iFirstArg]);
 
-	fprintf(stdout, "Dumping %s\n\n", argv[iFirstArg]);
+	if (!a.isValid())
+	{
+		printf("Invalid file format!\n");
+		exit(-1);
+	}
+
+	printf("Dump of file %s\n\n", argv[iFirstArg]);
+	printf("File Type: %s\n\n", "EXECUTABLE FILE");
 
 	// dump the header data
 	a.dumpHeader(stdout);

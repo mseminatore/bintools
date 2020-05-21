@@ -37,7 +37,7 @@ protected:
 	using BreakpointList = std::set<uint32_t>;
 	BreakpointList breakpoints;
 
-	AoutFile obj;
+	ObjectFile obj;
 
 public:
 	Cisc() {

@@ -69,7 +69,7 @@ int getopt(int n, char *args[])
 //
 void testGen()
 {
-	AoutFile a;
+	ObjectFile a;
 
 	a.allocBSS(256);
 
@@ -126,7 +126,7 @@ void main(int argc, char *argv[])
 		exit(0);
 	}
 
-	AoutFile a;
+	ObjectFile a;
 
 	a.readFile(argv[iFirstArg]);
 

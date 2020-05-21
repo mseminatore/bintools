@@ -77,19 +77,9 @@ struct SymbolEntity
 static_assert(sizeof(SymbolEntity) == 12, "Invalid symbol entry!");
 
 //
-// TODO - is this even needed?
+//
 //
 class ObjectFile
-{
-public:
-	ObjectFile() {}
-	virtual ~ObjectFile() {}
-};
-
-//
-//
-//
-class AoutFile : public ObjectFile
 {
 protected:
 	AOUT_HEADER file_header;
@@ -117,8 +107,8 @@ protected:
 	uint32_t textBase, dataBase, bssBase;
 
 public:
-	AoutFile();
-	virtual ~AoutFile();
+	ObjectFile();
+	virtual ~ObjectFile();
 
 	void clear();
 
@@ -165,8 +155,8 @@ public:
 	// relocations
 	void addTextRelocation(RelocationEntry&);
 	void addDataRelocation(RelocationEntry&);
-	bool relocate(const std::vector<AoutFile*>&);
-	void concat(AoutFile *rhs);
+	bool relocate(const std::vector<ObjectFile*>&);
+	void concat(ObjectFile *rhs);
 
 	// debug output
 	void dumpHeader(FILE*);

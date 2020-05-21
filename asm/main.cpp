@@ -28,7 +28,7 @@ enum
 class AsmParser : public BaseParser
 {
 protected:
-	AoutFile obj;
+	ObjectFile obj;
 	using AddressList = std::vector<uint16_t>;
 	using Fixups = std::map<std::string, AddressList>;
 	Fixups fixups;

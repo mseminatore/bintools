@@ -56,7 +56,7 @@ int main(int argc, char* argv[])
 
 	int iFirstArg = getopt(argc, argv);
 	
-	std::vector<AoutFile*> files;
+	std::vector<ObjectFile*> files;
 
 	fprintf(stdout, "Linking...\n");
 
@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
 	{
 		fprintf(stdout, "%s\n", argv[i]);
 
-		AoutFile *pObj = new AoutFile();
+		ObjectFile *pObj = new ObjectFile();
 		pObj->readFile(argv[i]);
 
 		files.push_back(pObj);

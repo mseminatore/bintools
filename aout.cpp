@@ -2,12 +2,12 @@
 #include <assert.h>
 #include <ctype.h>
 
-AoutFile::AoutFile()
+ObjectFile::ObjectFile()
 {
 	clear();
 }
 
-AoutFile::~AoutFile()
+ObjectFile::~ObjectFile()
 {
 
 }
@@ -15,7 +15,7 @@ AoutFile::~AoutFile()
 //
 //
 //
-void AoutFile::clear()
+void ObjectFile::clear()
 {
 	// init file header properties
 	memset(&file_header, 0, sizeof(file_header));
@@ -40,7 +40,7 @@ void AoutFile::clear()
 //
 //
 //
-SymbolEntity AoutFile::symbolAt(size_t index)
+SymbolEntity ObjectFile::symbolAt(size_t index)
 {
 	return symbolTable[index].second;
 }
@@ -48,7 +48,7 @@ SymbolEntity AoutFile::symbolAt(size_t index)
 //
 //
 //
-bool AoutFile::findSymbol(const std::string &name, SymbolEntity &sym)
+bool ObjectFile::findSymbol(const std::string &name, SymbolEntity &sym)
 {
 	auto index = indexOfSymbol(name);
 	if (index != UINT_MAX)
@@ -63,7 +63,7 @@ bool AoutFile::findSymbol(const std::string &name, SymbolEntity &sym)
 //
 //
 //
-void AoutFile::concat(AoutFile *rhs)
+void ObjectFile::concat(ObjectFile *rhs)
 {
 	// combine headers
 	file_header.a_bss += rhs->file_header.a_bss;
@@ -154,7 +154,7 @@ void AoutFile::concat(AoutFile *rhs)
 //
 //
 //
-bool AoutFile::relocate(const std::vector<AoutFile*> &modules)
+bool ObjectFile::relocate(const std::vector<ObjectFile*> &modules)
 {
 	// for each relocation
 	for (auto it = textRelocs.begin(); it != textRelocs.end(); it++)
@@ -233,7 +233,7 @@ bool AoutFile::relocate(const std::vector<AoutFile*> &modules)
 	return true;
 }
 
-int AoutFile::writeFile(const std::string &name)
+int ObjectFile::writeFile(const std::string &name)
 {
 	FILE *f = fopen(name.c_str(), "wb");
 	if (nullptr == f)
@@ -247,7 +247,7 @@ int AoutFile::writeFile(const std::string &name)
 	return result;
 }
 
-int AoutFile::writeFile(FILE *fptr)
+int ObjectFile::writeFile(FILE *fptr)
 {
 	assert(fptr != nullptr);
 	if (fptr == nullptr)
@@ -297,7 +297,7 @@ int AoutFile::writeFile(FILE *fptr)
 	return 0;
 }
 
-int AoutFile::readFile(const std::string &name)
+int ObjectFile::readFile(const std::string &name)
 {
 	FILE *f = fopen(name.c_str(), "rb");
 	if (nullptr == f)
@@ -311,7 +311,7 @@ int AoutFile::readFile(const std::string &name)
 	return result;
 }
 
-int AoutFile::readFile(FILE *fptr)
+int ObjectFile::readFile(FILE *fptr)
 {
 	assert(fptr != nullptr);
 	if (fptr == nullptr)
@@ -382,7 +382,7 @@ int AoutFile::readFile(FILE *fptr)
 	return 0;
 }
 
-uint32_t AoutFile::allocBSS(size_t size)
+uint32_t ObjectFile::allocBSS(size_t size)
 {
 	uint32_t loc = file_header.a_bss;
 	file_header.a_bss += size;
@@ -390,21 +390,21 @@ uint32_t AoutFile::allocBSS(size_t size)
 	return loc;
 }
 
-uint32_t AoutFile::addText(uint8_t item)
+uint32_t ObjectFile::addText(uint8_t item)
 {
 	uint32_t addr = text_segment.size();
 		text_segment.push_back(item);
 	return addr;
 }
 
-uint32_t AoutFile::addData(uint8_t item)
+uint32_t ObjectFile::addData(uint8_t item)
 {
 	uint32_t addr = data_segment.size();
 		data_segment.push_back(item);
 	return addr;
 }
 
-void AoutFile::addSymbol(const std::string &name, SymbolEntity &sym)
+void ObjectFile::addSymbol(const std::string &name, SymbolEntity &sym)
 {
 	auto it = symbolLookup.find(name);
 
@@ -425,7 +425,7 @@ void AoutFile::addSymbol(const std::string &name, SymbolEntity &sym)
 	symbolLookup.insert(SymbolLookup::value_type(name, index));
 }
 
-uint32_t AoutFile::addString(const std::string &name)
+uint32_t ObjectFile::addString(const std::string &name)
 {
 	uint32_t offset = stringTable.size();
 
@@ -438,7 +438,7 @@ uint32_t AoutFile::addString(const std::string &name)
 	return offset;
 }
 
-size_t AoutFile::indexOfSymbol(const std::string &name)
+size_t ObjectFile::indexOfSymbol(const std::string &name)
 {
 	auto iter = symbolLookup.find(name);
 
@@ -448,17 +448,17 @@ size_t AoutFile::indexOfSymbol(const std::string &name)
 	return iter->second;
 }
 
-void AoutFile::addTextRelocation(RelocationEntry &r)
+void ObjectFile::addTextRelocation(RelocationEntry &r)
 {
 	textRelocs.push_back(r);
 }
 
-void AoutFile::addDataRelocation(RelocationEntry &r)
+void ObjectFile::addDataRelocation(RelocationEntry &r)
 {
 	dataRelocs.push_back(r);
 }
 
-void AoutFile::dumpHeader(FILE *f)
+void ObjectFile::dumpHeader(FILE *f)
 {
 	assert(f != nullptr);
 	if (f == nullptr)
@@ -480,7 +480,7 @@ void AoutFile::dumpHeader(FILE *f)
 //
 //
 //
-void AoutFile::hexDumpGroup(FILE *f, uint8_t *buf)
+void ObjectFile::hexDumpGroup(FILE *f, uint8_t *buf)
 {
 	for (int item = 0; item < 4; item++)
 	{
@@ -491,7 +491,7 @@ void AoutFile::hexDumpGroup(FILE *f, uint8_t *buf)
 //
 //
 //
-void AoutFile::hexDumpLine(FILE *f, uint32_t offset, uint8_t *buf)
+void ObjectFile::hexDumpLine(FILE *f, uint32_t offset, uint8_t *buf)
 {
 	fprintf(f, "%04X: ", offset);
 
@@ -522,7 +522,7 @@ void AoutFile::hexDumpLine(FILE *f, uint32_t offset, uint8_t *buf)
 //
 //
 //
-void AoutFile::hexDumpSegment(FILE *f, uint8_t *seg, size_t size)
+void ObjectFile::hexDumpSegment(FILE *f, uint8_t *seg, size_t size)
 {
 	uint32_t offset = 0;
 
@@ -542,7 +542,7 @@ void AoutFile::hexDumpSegment(FILE *f, uint8_t *seg, size_t size)
 	hexDumpLine(f, offset, lastLine);
 }
 
-void AoutFile::dumpText(FILE *f)
+void ObjectFile::dumpText(FILE *f)
 {
 	assert(f != nullptr);
 	if (f == nullptr)
@@ -556,7 +556,7 @@ void AoutFile::dumpText(FILE *f)
 	fputc('\n', f);
 }
 
-void AoutFile::dumpData(FILE *f)
+void ObjectFile::dumpData(FILE *f)
 {
 	assert(f != nullptr);
 	if (f == nullptr)
@@ -570,7 +570,7 @@ void AoutFile::dumpData(FILE *f)
 	fputc('\n', f);
 }
 
-void AoutFile::dumpTextRelocs(FILE *f)
+void ObjectFile::dumpTextRelocs(FILE *f)
 {
 	assert(f != nullptr);
 	if (f == nullptr)
@@ -592,7 +592,7 @@ void AoutFile::dumpTextRelocs(FILE *f)
 	fputc('\n', f);
 }
 
-void AoutFile::dumpDataRelocs(FILE *f)
+void ObjectFile::dumpDataRelocs(FILE *f)
 {
 	assert(f != nullptr);
 	if (f == nullptr)
@@ -611,7 +611,7 @@ void AoutFile::dumpDataRelocs(FILE *f)
 	fputc('\n', f);
 }
 
-void AoutFile::dumpSymbols(FILE *f)
+void ObjectFile::dumpSymbols(FILE *f)
 {
 	assert(f != nullptr);
 	if (f == nullptr)

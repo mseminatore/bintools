@@ -97,9 +97,11 @@ protected:
 	// Make this a vector with a map of name/index pairs for lookup.
 	using SymbolTable = std::vector<std::pair<std::string, SymbolEntity>>;
 	using SymbolLookup = std::map<std::string, size_t>;
+	using SymbolRLookup = std::map<size_t, std::string>;
 
 	SymbolTable symbolTable;
 	SymbolLookup symbolLookup;
+	SymbolRLookup symbolRLookup;
 
 	using StringTable = std::vector<char>;
 	StringTable stringTable;
@@ -151,6 +153,7 @@ public:
 	size_t indexOfSymbol(const std::string &name);
 	SymbolEntity symbolAt(size_t index);
 	bool findSymbol(const std::string &name, SymbolEntity &sym);
+	bool findSymbolByAddr(uint16_t addr, std::string &name);
 
 	// relocations
 	void addTextRelocation(RelocationEntry&);

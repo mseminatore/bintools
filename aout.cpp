@@ -31,6 +31,7 @@ void ObjectFile::clear()
 
 	symbolTable.clear();
 	symbolLookup.clear();
+	symbolRLookup.clear();
 
 	stringTable.clear();
 
@@ -54,6 +55,19 @@ bool ObjectFile::findSymbol(const std::string &name, SymbolEntity &sym)
 	if (index != UINT_MAX)
 	{
 		sym = symbolAt(index);
+		return true;
+	}
+
+	return false;
+}
+
+bool ObjectFile::findSymbolByAddr(uint16_t addr, std::string &name)
+{
+	name = "<none>";
+	auto it = symbolRLookup.find(addr);
+	if (it != symbolRLookup.end())
+	{
+		name = it->second;
 		return true;
 	}
 
@@ -377,6 +391,7 @@ int ObjectFile::readFile(FILE *fptr)
 		char *pStr = &(stringTable[sym.nameOffset]);
 		symbolTable.push_back(SymbolTable::value_type(pStr, sym));
 		symbolLookup.insert(SymbolLookup::value_type(pStr, i));
+		symbolRLookup.insert(SymbolRLookup::value_type(sym.value, pStr));
 	}
 
 	return 0;
@@ -423,6 +438,7 @@ void ObjectFile::addSymbol(const std::string &name, SymbolEntity &sym)
 
 	symbolTable.push_back(SymbolTable::value_type(name, sym));
 	symbolLookup.insert(SymbolLookup::value_type(name, index));
+	symbolRLookup.insert(SymbolRLookup::value_type(sym.value, name));
 }
 
 uint32_t ObjectFile::addString(const std::string &name)

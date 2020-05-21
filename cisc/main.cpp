@@ -76,6 +76,7 @@ public:
 	// breakpoints
 	uint16_t getPC() { return PC; }
 	bool getSymbolAddress(const std::string &name, uint16_t &addr);
+	bool getSymbolName(uint16_t addr, std::string &name);
 	void addBreakpoint(uint16_t addr) { breakpoints.insert(addr); }
 
 	void clearAllBreakpoints() { breakpoints.clear(); }
@@ -149,6 +150,14 @@ bool Cisc::getSymbolAddress(const std::string &name, uint16_t &addr)
 
 	addr = se.value;
 	return true;
+}
+
+//
+//
+//
+bool Cisc::getSymbolName(uint16_t addr, std::string &name)
+{
+	return obj.findSymbolByAddr(addr, name);
 }
 
 //
@@ -792,7 +801,10 @@ int main(int argc, char* argv[])
 				auto pc = cpu.getPC();
 				if (cpu.isBreakpoint(pc))
 				{
-					fprintf(stdout, "hit breakpoint @ 0x%04X\n", pc);
+					std::string name;
+
+					cpu.getSymbolName(pc, name);
+					fprintf(stdout, "hit breakpoint @ 0x%04X %s\n", pc, name.c_str());
 					singleStep = true;
 				}
 				else

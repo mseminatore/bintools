@@ -78,6 +78,20 @@ public:
 	bool getSymbolAddress(const std::string &name, uint16_t &addr);
 	void addBreakpoint(uint16_t addr) { breakpoints.insert(addr); }
 
+	void clearAllBreakpoints() { breakpoints.clear(); }
+	bool clearBreakpoint(const std::string &name)
+	{
+		uint16_t addr = 0;
+		if (getSymbolAddress(name, addr))
+		{
+			breakpoints.erase(addr);
+			log("removed breakpoint @ 0x%04X", addr);
+
+			return true;
+		}
+
+		return false;
+	}
 	void listBreakpoints();
 	bool setBreakpoint(const std::string &name)
 	{
@@ -728,6 +742,8 @@ int main(int argc, char* argv[])
 				cpu.tick();
 			else if (!strcmp(pToken, "r"))
 				cpu.printRegisters();
+			else if (!strcmp(pToken, "q"))
+				exit(0);
 			else if (!strcmp(pToken, "g"))
 			{
 				singleStep = false;
@@ -741,6 +757,15 @@ int main(int argc, char* argv[])
 					cpu.setBreakpoint(tok);
 				else
 					cpu.listBreakpoints();
+			}
+			else if (!strcmp(pToken, "y"))
+			{
+				auto tok = strtok(nullptr, " \n");
+
+				if (tok)
+					cpu.clearBreakpoint(tok);
+				else
+					cpu.clearAllBreakpoints();
 			}
 			else if (!strcmp(pToken, "d"))
 			{

@@ -568,7 +568,9 @@ void Cisc::exec()
 		addr = fetchW();
 		ram[addr] = A;
 
-		log("STA 0x%X", addr);
+		obj.findSymbolByAddr(addr, name);
+
+		log("STA %s (0x%X)", name.c_str(), addr);
 		break;
 
 	case OP_STX:
@@ -576,7 +578,9 @@ void Cisc::exec()
 		ram[addr] = LOBYTE(X);
 		ram[addr + 1] = HIBYTE(X);
 
-		log("STX 0x%X", addr);
+		obj.findSymbolByAddr(addr, name);
+
+		log("STX %s (0x%X)", name.c_str(), addr);
 		break;
 
 	case OP_STAX:

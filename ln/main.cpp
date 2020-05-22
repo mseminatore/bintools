@@ -70,7 +70,17 @@ int main(int argc, char* argv[])
 
 		files.push_back(pObj);
 	}
-	
+
+	// create variable for start of RAM
+	ObjectFile *pObj = new ObjectFile();
+	files.push_back(pObj);
+
+	SymbolEntity se;
+
+	se.type = SET_DATA;
+	se.value = pObj->addData(0xFE);
+	pObj->addSymbol("___ram_start", se);
+
 	// possibly adjust base address...
 	files[0]->setTextBase(g_bBaseAddr);
 

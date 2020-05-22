@@ -312,6 +312,7 @@ void Cisc::updateFlag(uint32_t result, uint8_t flag)
 //
 void Cisc::exec()
 {
+	std::string name;
 	uint8_t operand;
 	uint16_t addr, temp16;
 
@@ -450,7 +451,10 @@ void Cisc::exec()
 		push(HIBYTE(PC));
 
 		PC = addr;
-		log("CALL 0x%X", PC);
+
+		obj.findSymbolByAddr(PC, name);
+
+		log("CALL %s (0x%X)", name.c_str(), PC);
 		break;
 	
 	case OP_RET:

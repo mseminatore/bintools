@@ -4,6 +4,7 @@
 #include "../cpu_cisc.h"
 #include <stdio.h>
 #include <stdarg.h>
+#include <ctype.h>
 //#include <vector>
 #include <set>
 
@@ -25,6 +26,9 @@ protected:
 	
 	uint8_t ram[0x10000];
 	uint8_t rom[0x10000];
+
+	uint16_t maxStack;
+	uint16_t __brk;
 
 	uint8_t opcode;
 	static const int SMALL_BUFFER = 256;
@@ -57,8 +61,11 @@ public:
 
 		PC = ram[RESET_VECTOR];
 		SP = RAM_END;
+
+		maxStack = 0xFFFF;
 	}
 
+	uint16_t getMaxStack() { return RAM_END - maxStack; }
 	void push(uint8_t val);
 	uint8_t pop();
 	void getRegisterList(uint8_t operand, std::string&);
@@ -121,9 +128,16 @@ public:
 		printf("A = %02X X = %04X CC = %02X SP = %04X PC = %04X\n", A, X, CC, SP, PC);
 	}
 
-	void printMemory(uint32_t addr)
+	void printByte(uint16_t addr)
 	{
-		printf("%d (0x%04X): %d (0x%04X)\n", addr, addr, ram[addr], ram[addr]);
+		printf("%d (0x%04X): %d (0x%02X)\n", addr, addr, ram[addr], ram[addr]);
+	}
+
+	void printWord(uint16_t addr)
+	{
+		uint16_t value = ram[addr] + (ram[addr + 1] << 8);
+
+		printf("%d (0x%04X): %d (0x%04X)\n", addr, addr, value, value);
 	}
 };
 
@@ -176,6 +190,13 @@ void Cisc::load(const std::string &filename)
 	// populate rom
 	memset(rom, 0, 0xFFFF);
 	memcpy(rom, obj.textPtr(), obj.getTextSize());
+
+	SymbolEntity se;
+	if (obj.findSymbol("__brk", se))
+	{
+		__brk = ram[se.value] + (ram[se.value + 1] << 8);
+		printf("Found stack limit of: 0x%04X\n", __brk);
+	}
 }
 
 //
@@ -184,6 +205,13 @@ void Cisc::load(const std::string &filename)
 void Cisc::push(uint8_t val)
 {
 	SP--;
+
+	if (SP < maxStack)
+		maxStack = SP;
+
+	if (SP < __brk)
+		panic();
+
 	ram[SP] = val;
 }
 
@@ -760,7 +788,7 @@ int main(int argc, char* argv[])
 			else if (!strcmp(pToken, "r"))
 				cpu.printRegisters();
 			else if (!strcmp(pToken, "q"))
-				exit(0);
+				done = true;
 			else if (!strcmp(pToken, "g"))
 			{
 				singleStep = false;
@@ -784,10 +812,10 @@ int main(int argc, char* argv[])
 				else
 					cpu.clearAllBreakpoints();
 			}
-			else if (!strcmp(pToken, "d"))
+			else if (!strcmp(pToken, "db"))
 			{
 				auto tok = strtok(nullptr, " \n");
-				uint32_t addr = 0;
+				uint16_t addr = 0;
 				auto base = 10;
 				if (tok)
 				{
@@ -796,9 +824,34 @@ int main(int argc, char* argv[])
 						base = 16;
 						tok++;
 					}
-					addr = strtoul(tok, nullptr, base);
 
-					cpu.printMemory(addr);
+					if (isdigit(tok[0]))
+						addr = (uint16_t)strtoul(tok, nullptr, base);
+					else
+						cpu.getSymbolAddress(tok, addr);
+
+					cpu.printByte(addr);
+				}
+			}
+			else if (!strcmp(pToken, "dw"))
+			{
+				auto tok = strtok(nullptr, " \n");
+				uint16_t addr = 0;
+				auto base = 10;
+				if (tok)
+				{
+					if (tok[0] == '$')
+					{
+						base = 16;
+						tok++;
+					}
+
+					if (isdigit(tok[0]))
+						addr = (uint16_t)strtoul(tok, nullptr, base);
+					else
+						cpu.getSymbolAddress(tok, addr);
+
+					cpu.printWord(addr);
 				}
 			}
 		}
@@ -821,6 +874,8 @@ int main(int argc, char* argv[])
 		}
 		
 	}
+
+	printf("Max stack size: %d\n", cpu.getMaxStack());
 
 	return 0;
 }

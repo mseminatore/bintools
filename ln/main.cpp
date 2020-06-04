@@ -78,6 +78,11 @@ int main(int argc, char* argv[])
 	SymbolEntity se;
 
 	se.type = SET_DATA;
+
+	se.value = pObj->addData(0);
+	pObj->addData(0xE0);
+	pObj->addSymbol("__brk", se);
+
 	se.value = pObj->addData(0xFE);
 	pObj->addSymbol("___ram_start", se);
 

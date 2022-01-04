@@ -553,7 +553,13 @@ void AsmParser::imm16(int op)
 	if (bSegmentRelative)
 	{
 		auto external = yylval.sym->type == stExternal ? true : false;
+
 		uint32_t index = SEG_DATA;
+
+		// handle CODE PTR's
+		if (yylval.sym->type == stProc)
+			index = SEG_TEXT;
+
 		if (external)
 		{
 			// for stExternal this needs to be the index to the symbol table entry

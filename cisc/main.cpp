@@ -13,7 +13,7 @@
 //
 #define SETF(flag) (CC |= flag)
 #define CLRF(flag) (CC &= ~flag)
-#define TSTF(flag) (CC ^ flag) 
+#define TSTF(flag) (CC & flag) 
 
 //
 //
@@ -21,15 +21,22 @@
 class Cisc
 {
 protected:
+	// registers
 	uint8_t A, CC;
 	uint16_t PC, SP, X;
 	
+	// memory
 	uint8_t ram[0x10000];
 	uint8_t rom[0x10000];
 
+	// state
 	uint16_t maxStack;
 	uint16_t __brk;
 
+	//
+	uint8_t timer;
+
+	// instruction buffer
 	uint8_t opcode;
 	static const int SMALL_BUFFER = 256;
 
@@ -63,6 +70,7 @@ public:
 		SP = RAM_END;
 
 		maxStack = 0xFFFF;
+		timer = 0;
 	}
 
 	uint16_t getMaxStack() { return RAM_END - maxStack; }
@@ -635,6 +643,11 @@ void Cisc::exec()
 //
 void Cisc::tick()
 {
+	timer++;
+
+	if (0 == (timer % 30))
+		interrupt(INT_VECTOR);
+
 	opcode = fetch();
 	decode();
 	exec();
@@ -713,6 +726,8 @@ void Cisc::interrupt(uint32_t vector)
 
 	// save the current context
 	pushAll();
+
+	SETF(FLAG_I);
 
 	// jump to the interrupt vector
 	PC = ram[vector] + (ram[vector + 1] << 8);

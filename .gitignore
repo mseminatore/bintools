@@ -45,3 +45,7 @@
 *.user
 Debug/
 .vs/
+
+# Bison/Flex files
+bison.hairy.txt
+bison.simple.txt

@@ -1,0 +1,10 @@
+b - list breakpoints
+b <name> - set breakpoint at <name>
+db <name> - dump byte at <name>
+dw <name> - dump word at <name>
+g - go, run the program
+s - single step
+r - print registers
+q - quit
+y - clear breakpoints
+y <name> - clear breakpoint at <name>

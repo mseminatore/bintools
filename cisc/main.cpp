@@ -187,6 +187,8 @@ bool Cisc::getSymbolName(uint16_t addr, std::string &name)
 //
 void Cisc::load(const std::string &filename)
 {
+	printf("Loading file: %s\n", filename.c_str());
+
 	obj.readFile(filename);
 
 	PC = obj.getEntryPoint();
@@ -203,7 +205,7 @@ void Cisc::load(const std::string &filename)
 	if (obj.findSymbol("__brk", se))
 	{
 		__brk = ram[se.value] + (ram[se.value + 1] << 8);
-		printf("Found stack limit of: 0x%04X\n", __brk);
+		printf("Found stack __brk limit of: 0x%04X\n", __brk);
 	}
 }
 

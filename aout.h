@@ -95,7 +95,7 @@ protected:
 	Relocations dataRelocs;
 
 	// Make this a vector with a map of name/index pairs for lookup.
-	using SymbolTable = std::vector<std::pair<std::string, SymbolEntity>>;
+	using SymbolTable = std::vector<std::pair<std::string, SymbolEntity> >;
 	using SymbolLookup = std::map<std::string, size_t>;
 	using SymbolRLookup = std::map<size_t, std::string>;
 

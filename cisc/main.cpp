@@ -8,32 +8,30 @@
 //#include <vector>
 #include <set>
 
-//
-//
-//
+// Flag bit helper functions
 #define SETF(flag) (CC |= flag)
 #define CLRF(flag) (CC &= ~flag)
-#define TSTF(flag) (CC & flag) 
+#define TSTF(flag) ((CC & flag) != 0)
 
-//
-//
-//
+// define our CPU arch
 class Cisc
 {
 protected:
-	// registers
+	// 8-bit registers
 	uint8_t A, CC;
+
+	// 16-bit registers
 	uint16_t PC, SP, X;
 	
 	// memory
 	uint8_t ram[0x10000];
 	uint8_t rom[0x10000];
 
-	// state
+	// processor state
 	uint16_t maxStack;
 	uint16_t __brk;
 
-	//
+	// 8-bit timer register
 	uint8_t timer;
 
 	// instruction buffer
@@ -49,7 +47,7 @@ protected:
 	BreakpointList breakpoints;
 
 	ObjectFile obj;
-
+	
 public:
 	Cisc() {
 		reset();
@@ -95,6 +93,7 @@ public:
 	void addBreakpoint(uint16_t addr) { breakpoints.insert(addr); }
 
 	void clearAllBreakpoints() { breakpoints.clear(); }
+
 	bool clearBreakpoint(const std::string &name)
 	{
 		uint16_t addr = 0;
@@ -108,7 +107,9 @@ public:
 
 		return false;
 	}
+
 	void listBreakpoints();
+
 	bool setBreakpoint(const std::string &name)
 	{
 		uint16_t addr = 0;
@@ -131,9 +132,13 @@ public:
 		return false;
 	}
 
+	uint16_t getAddressFromToken(char *tok);
+
+	//
 	void printRegisters()
 	{
-		printf("A = %02X X = %04X CC = %02X SP = %04X PC = %04X\n", A, X, CC, SP, PC);
+		printf("A: %02X X: %04X CC: %02X SP: %04X PC: %04X\n", A, X, CC, SP, PC);
+		printf("Flags C: %d Z: %d V: %d N: %d I: %d\n", TSTF(FLAG_C), TSTF(FLAG_Z), TSTF(FLAG_V), TSTF(FLAG_N), TSTF(FLAG_I));
 	}
 
 	void printByte(uint16_t addr)
@@ -146,6 +151,11 @@ public:
 		uint16_t value = ram[addr] + (ram[addr + 1] << 8);
 
 		printf("%d (0x%04X): %d (0x%04X)\n", addr, addr, value, value);
+	}
+
+	void dumpMemoryAt(uint32_t addr)
+	{
+		hexDumpLine(stdout, addr, &ram[addr]);
 	}
 };
 
@@ -514,7 +524,7 @@ void Cisc::exec()
 
 	case OP_JNE:
 		addr = fetchW();
-		if (!(CC & FLAG_Z))
+		if (!TSTF(FLAG_Z))
 			PC = addr;
 
 		log("JNE 0x%X", addr);
@@ -522,7 +532,7 @@ void Cisc::exec()
 
 	case OP_JEQ:
 		addr = fetchW();
-		if ((CC & FLAG_Z))
+		if (TSTF(FLAG_Z))
 			PC = addr;
 
 		log("JEQ 0x%X", addr);
@@ -655,17 +665,13 @@ void Cisc::tick()
 	exec();
 }
 
-//
-//
-//
+// fetch a code byte value
 uint8_t Cisc::fetch()
 {
 	return rom[PC++];
 }
 
-//
-//
-//
+// fetch a code word value
 uint16_t Cisc::fetchW()
 {
 	uint16_t word;
@@ -729,6 +735,7 @@ void Cisc::interrupt(uint32_t vector)
 	// save the current context
 	pushAll();
 
+	// set interrupt flag
 	SETF(FLAG_I);
 
 	// jump to the interrupt vector
@@ -740,6 +747,7 @@ void Cisc::interrupt(uint32_t vector)
 //
 void Cisc::panic()
 {
+	puts("Panic!!!!!");
 	printRegisters();
 
 	while (true);
@@ -772,6 +780,31 @@ int getopt(int n, char *args[])
 	}
 
 	return i;
+}
+
+//
+uint16_t Cisc::getAddressFromToken(char *tok)
+{
+	uint16_t addr = 0;
+	auto base = 10;
+	if (!tok)
+	{
+		panic();
+		return 0;
+	}
+
+	if (tok[0] == '$')
+	{
+		base = 16;
+		tok++;
+	}
+
+	if (isdigit(tok[0]))
+		addr = (uint16_t)strtoul(tok, nullptr, base);
+	else
+		getSymbolAddress(tok, addr);
+
+	return addr;
 }
 
 //
@@ -810,6 +843,18 @@ int main(int argc, char* argv[])
 			{
 				singleStep = false;
 				cpu.tick();
+			}
+			else if (!strcmp(pToken, "m"))
+			{
+				auto tok = strtok(nullptr, " \n");
+				
+				if (tok)
+				{
+					auto addr = cpu.getAddressFromToken(tok);
+
+					// dump memory bytes
+					cpu.dumpMemoryAt(addr);
+				}
 			}
 			else if (!strcmp(pToken, "b"))
 			{

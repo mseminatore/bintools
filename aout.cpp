@@ -496,7 +496,7 @@ void ObjectFile::dumpHeader(FILE *f)
 //
 //
 //
-void ObjectFile::hexDumpGroup(FILE *f, uint8_t *buf)
+void hexDumpGroup(FILE *f, uint8_t *buf)
 {
 	for (int item = 0; item < 4; item++)
 	{
@@ -507,7 +507,7 @@ void ObjectFile::hexDumpGroup(FILE *f, uint8_t *buf)
 //
 //
 //
-void ObjectFile::hexDumpLine(FILE *f, uint32_t offset, uint8_t *buf)
+void hexDumpLine(FILE *f, uint32_t offset, uint8_t *buf)
 {
 	fprintf(f, "%04X: ", offset);
 
@@ -538,7 +538,7 @@ void ObjectFile::hexDumpLine(FILE *f, uint32_t offset, uint8_t *buf)
 //
 //
 //
-void ObjectFile::hexDumpSegment(FILE *f, uint8_t *seg, size_t size)
+void hexDumpSegment(FILE *f, uint8_t *seg, size_t size)
 {
 	uint32_t offset = 0;
 

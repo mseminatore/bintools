@@ -171,11 +171,11 @@ public:
 	void dumpTextRelocs(FILE*);
 	void dumpDataRelocs(FILE*);
 	void dumpSymbols(FILE*);
-
-	void hexDumpGroup(FILE *f, uint8_t *buf);
-	void hexDumpLine(FILE *f, uint32_t offset, uint8_t *buf);
-	void hexDumpSegment(FILE *f, uint8_t *seg, size_t size);
 };
+
+void hexDumpGroup(FILE *f, uint8_t *buf);
+void hexDumpLine(FILE *f, uint32_t offset, uint8_t *buf);
+void hexDumpSegment(FILE *f, uint8_t *seg, size_t size);
 
 #endif __AOUT_H
 

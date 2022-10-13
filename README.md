@@ -17,6 +17,8 @@ yet had the chance to work with object files and linkers.
 
 ## The tools
 
-[asm](asm/readme.md) - an assembler that generates a.out object files
-[ln](ln/readme.md) - a linker which combines a.out object files into an executable
-[dumpbin](dumpbin/readme.md) - a tool to explore a.out object files and executables
+* [asm](asm/readme.md) - an assembler that generates a.out object files
+* [ln](ln/readme.md) - a linker which combines a.out object files into an executable
+* [dumpbin](dumpbin/readme.md) - a tool to explore a.out object files and executables
+* [cisc](cisc/readme.md) - an b-bit cpu simulator and debug monitor
+

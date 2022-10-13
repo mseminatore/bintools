@@ -136,8 +136,13 @@ void main(int argc, char *argv[])
 		exit(-1);
 	}
 
-	printf("Dump of file %s\n\n", argv[iFirstArg]);
-	printf("File Type: %s\n\n", "EXECUTABLE FILE");
+	printf("Dump of file: %s\n\n", argv[iFirstArg]);
+
+	// TODO - test for OBJ file vs. EXE
+	if (a.getTextRelocSize() == 0 && a.getDataRelocSize() == 0)
+		printf("File Type: %s\n\n", "EXECUTABLE FILE");
+	else
+		printf("File Type: %s\n\n", "OBJECT FILE");
 
 	// dump the header data
 	a.dumpHeader(stdout);

@@ -26,7 +26,7 @@ to re-implement the linker using a more modern object file format like `ELF` or
 `PE`.
 
 > If you want to learn about linkers and object file format, I highly recommend
-> the book **Linkers & Loaders** by John R. Levine
+> the book '**Linkers & Loaders**' by John R. Levine
 
 Certainly, I could have chosen an existing assembler that produced `a.out` 
 object files. But I also wanted to avoid large and complex instruction sets,
@@ -39,9 +39,10 @@ debug them.
 
 ## The bintools tools
 
+The bintools project consists of a number of tools.
 
 * [asm](https://github.com/mseminatore/bintools/blob/master/asm/README.md) - an assembler that generates a.out object files
 * [ln](https://github.com/mseminatore/bintools/blob/master/ln/README.md) - a linker which combines a.out object files into an executable
-* [dumpbin](https://github.com/mseminatore/bintools/blob/master/dumpbin/README.md) - a tool to explore a.out object files and executables
-* [cisc](https://github.com/mseminatore/bintools/blob/master/cisc/README.md) - an b-bit cpu simulator and debug monitor
+* [dumpbin](https://github.com/mseminatore/bintools/blob/master/dumpbin/README.md) - a utility to explore a.out object files and executables
+* [cisc](https://github.com/mseminatore/bintools/blob/master/cisc/README.md) - an 8-bit CPU simulator and debug monitor
 

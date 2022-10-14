@@ -42,7 +42,7 @@ debug them.
 The bintools project consists of a number of tools.
 
 * [asm](https://github.com/mseminatore/bintools/blob/master/asm) - an assembler that generates a.out object files
-* [ln](https://github.com/mseminatore/bintools/blob/master/ln/README.md) - a linker which combines a.out object files into an executable
-* [dumpbin](https://github.com/mseminatore/bintools/blob/master/dumpbin/README.md) - a utility to explore a.out object files and executables
-* [cisc](https://github.com/mseminatore/bintools/blob/master/cisc/README.md) - an 8-bit CPU simulator and debug monitor
+* [ln](https://github.com/mseminatore/bintools/blob/master/ln) - a linker which combines a.out object files into an executable
+* [dumpbin](https://github.com/mseminatore/bintools/blob/master/dumpbin) - a utility to explore a.out object files and executables
+* [cisc](https://github.com/mseminatore/bintools/blob/master/cisc/) - an 8-bit CPU simulator and debug monitor
 

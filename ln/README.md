@@ -17,7 +17,7 @@ bintools>
 ```
 
 By default and by convention the linker produces an executable named a.out. The
--o option can be used to provide an alternate outpuf file name. For example:
+`-o` option can be used to provide an alternate outpuf file name. For example:
 
 ```
 bintools> ln -o hello main.o string.o
@@ -30,7 +30,7 @@ bintools>
 
 By default the linker produces an executable image based at address 0. If you 
 wish to change that, perhaps because you want to reserve the first 256 bytes 
-of memory for a simple OS, you can use the -b option to provide a new base 
+of memory for a simple OS, you can use the `-b` option to provide a new base 
 address.
 
 ```

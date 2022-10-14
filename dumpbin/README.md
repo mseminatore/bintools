@@ -1,6 +1,7 @@
 # DUMPBIN
 
-The bintools dumpbin tool.
+The bintools dumpbin tool. A tool for viewing the internals of an `a.out`
+formatted object file.
 
 ## Using dumpbin
 
@@ -57,7 +58,7 @@ and relocation entries.
 
 ## Displaying segment contents
 
-Using the -t and/or -d options will also dump the contents of the text and/or
+Using the `-t` and/or `-d` options will also dump the contents of the text and/or
 data segments.
 
 > Note that segments, especially in a fully linked executable image, can be 
@@ -101,7 +102,7 @@ Text segment (hex)
 
 ## Displaying relocation entries
 
-Using the -r options will dump the contents of the text and data relocation
+Using the `-r` option will dump the contents of the text and data relocation
 tables. Relocation table entries mark the location of references to code and
 data that the linker will have to fixup when code/data segments are moved and
 when the address of external symbols are resolved.
@@ -156,7 +157,7 @@ Symbol Table size: 0x0014 (20) bytes
 
 ## Displaying symbol table entries
 
-And finally the -s option will dump the contents of the symbol table. The 
+And finally the `-s` option will dump the contents of the symbol table. The 
 symbol table lists all the named memory locations in the code/data segments.
 When the linker needs to resolve an external symbol by name it uses the
 symbol table to find its address for patching relocation entries.

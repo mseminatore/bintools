@@ -21,4 +21,27 @@ By default and by convention the linker produces an executable named a.out. The
 
 ```
 bintools> ln -o hello main.o string.o
+Linking...
+main.o
+string.o
+Linking complete -> hello
+bintools>
 ```
+
+By default the linker produces an executable image based at address 0. If you 
+wish to change that, perhaps because you want to reserve the first 256 bytes 
+of memory for a simple OS, you can use the -b option to provide a new base 
+address.
+
+```
+bintools> ln -o hello -b 256 main.o string.o
+Linking...
+main.o
+string.o
+Linking complete -> hello
+bintools>
+```
+
+## The linking process
+
+Coming soon!

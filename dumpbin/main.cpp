@@ -15,12 +15,12 @@ bool g_bDumpStrings = false;
 //
 void usage()
 {
-	printf("usage: dumpbin [options] filename\n\n");
-	printf("-t\tdump text segment\n");
-	printf("-d\tdump data segment\n");
-	printf("-r\tdump relocations\n");
-	printf("-s\tdump symbols\n");
-	printf("-a\tdump all\n");
+	puts("usage: dumpbin [options] filename\n");
+	puts("-t\tdump text segment");
+	puts("-d\tdump data segment");
+	puts("-r\tdump relocations");
+	puts("-s\tdump symbols");
+	puts("-a\tdump all");
 	exit(0);
 }
 

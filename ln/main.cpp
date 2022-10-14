@@ -15,7 +15,10 @@ char *g_szOutputFilename = "a.out";
 //
 void usage()
 {
-	printf("usage: ln [options] filename\n");
+	puts("usage: ln [options] filename\n");
+	puts("-b 0000\tset base address");
+	puts("-o file\tset output filename");
+
 	exit(0);
 }
 

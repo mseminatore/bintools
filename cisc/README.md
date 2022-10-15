@@ -10,7 +10,7 @@ processors are generally designed assuming that a high-level language compiler
 is involved.
 
 So I chose to design a simple 8-bit CISC processor and emulator. This design 
-was inspired by classic processors like the `6502`, `6800` and `6809`.
+was inspired by classic microprocessors like the `6502`, `6800` and `6809`.
 
 ## Registers
 
@@ -58,9 +58,31 @@ I | Interrupt flag
 
 Instruction | Description
 ----------- | -----------
+ADD | A <- A + memory
+ADDI | A <- A + immediate
+LDA | load A from memory
+LDAI | load A from immediate
+LDX | load X from 
+CALL | branch to a subroutine
+RET | return from subroutine
+RTI | return from interrupt
+JMP | unconditional branch
+JNE | branch on not equal
+JEQ | branc on equal
 
 ## Interrupts
 
-The processor supports interrupts.
+The processor supports interrupts. Interrupts save the processor state and 
+branch to an interrupt handler. Interrupts are vectored through a table at
+the top of RAM. Entering an interrupt set the `I` or interrupt flag in `CC`.
+A new interrupt cannot occur while an interrupt is being services so 
+interrupt handlers must be short to avoid missing an interrupt.
+
+Interrupt | Vector address
+--------- | --------------
+Reset | 0xFFFE
+Timer | 0xFFFC
+
+On a `RTI` return from interrupt the processor state is restored.
 
 ## Debug monitor

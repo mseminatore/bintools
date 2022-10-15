@@ -512,6 +512,8 @@ void Cisc::exec()
 
 	case OP_RTI:
 		popAll();
+		
+		// TODO/BUG - should this happen here?
 		CLRF(FLAG_I);
 
 		log("RTI");

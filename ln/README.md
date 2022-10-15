@@ -44,4 +44,19 @@ bintools>
 
 ## The linking process
 
-Coming soon!
+The files specified on the command line are linked together in the order 
+provided. This is important as the first code to be executed is the start
+of the first object file provided.
+
+The linker loads each of the specific object files, validating that they are
+proper a.out files. then the 
+
+## Linker generated variables
+
+At link time the linker automatically generates a few extra symbols that can be
+accessed from user code. These are as follows:
+
+Symbol | Description
+------ | -----------
+__brk | Address of top of heap and bottom of stack in memory
+__ram_start | Address is the start of heap memory

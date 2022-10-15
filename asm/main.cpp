@@ -177,7 +177,9 @@ TokenTable _tokenTable[] =
 //
 void usage()
 {
-	printf("usage: asm [options] filename\n");
+	puts("usage: asm [options] filename\n");
+	puts("-v\tverbose output");
+	puts("-o file\tset output filename");
 	exit(0);
 }
 
@@ -212,6 +214,7 @@ AsmParser::AsmParser() : BaseParser(std::make_unique<SymbolTable>())
 	// setup our lexical options
 	m_lexer->setCharLiterals(true);
 	m_lexer->setCPPComments(true);
+	m_lexer->setASMComments(true);
 	m_lexer->setHexNumbers(true);
 }
 
@@ -969,11 +972,16 @@ int main(int argc, char* argv[])
 
 	int iFirstArg = getopt(argc, argv);
 
-	AsmParser parser;
+	{
+		AsmParser parser;
 
-	parser.yydebug = g_bDebug;
+		parser.yydebug = g_bDebug;
 
-	parser.parseFile(argv[iFirstArg]);
+		// TODO - handle multiple files on the command line?
+		parser.parseFile(argv[iFirstArg]);
+	}
+
+	printf("Assembly complete -> %s\n", g_szOutputFilename);
 
 	return 0;
 }

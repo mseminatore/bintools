@@ -86,22 +86,47 @@ JEQ | branc on equal
 
 The processor supports interrupts. Interrupts save the processor state and 
 branch to an interrupt handler. Interrupts are vectored through a table at
-the top of RAM starting at 0xFF00. Entering an interrupt set the `I` or 
-interrupt flag in `CC`. A new interrupt cannot occur while an interrupt is 
-being services so interrupt handlers must be short to avoid missing an 
-interrupt.
+the top of RAM. Entering an interrupt set the `I` or interrupt flag in `CC`.
+
+> A new interrupt cannot occur while an interrupt is being services so 
+> interrupt handlers must be short to avoid missing an interrupt.
 
 Interrupt | Vector address
 --------- | --------------
-Reset | 0xFFFE
-Timer | 0xFFFC
 SWI | 0xFFFA
+Timer | 0xFFFC
+Reset | 0xFFFE
 
-On a `RTI` return from interrupt the processor state is restored.
+On a return from interrupt `RTI` the processor state is restored.
+
+## Memory map
+
+The default memory map is shown below. The start of code can be changed by 
+setting a non-zero base address in the linker.
+
+```
++----------------------------------------------------------+
+| $FFFE - reset vector                                     |
++----------------------------------------------------------+
+| $FFFC - interrupt vector                                 |
++----------------------------------------------------------+
+| $FFFA - software interrupt vector                        |
++----------------------------------------------------------+
+| $FF01 - $FFF9 (reserved for interrupt vectors)           |
++----------------------------------------------------------+
+| $FF00 - top of stack                                     |
++----------------------------------------------------------+
+| $E000 - top of heap, bottom of stack (__brk)             |
++----------------------------------------------------------+
+| __ram_start - bottom of heap                             |
++----------------------------------------------------------+
+| $0000 - start of code segment, data segment, bss segment |
++----------------------------------------------------------+
+```
 
 ## Debug monitor
 
-The debug monitor supports a number of commands. Where possible I tried to 
+The debug monitor supports a number of commands. Where practical I tried to 
 follow gdb or lldb conventions.
 
 Command | Description

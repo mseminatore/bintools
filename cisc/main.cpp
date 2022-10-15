@@ -762,7 +762,7 @@ void Cisc::panic()
 //
 void usage()
 {
-	printf("usage: cisc [options] filename\n");
+	puts("usage: cisc [options] filename\n");
 	exit(0);
 }
 

@@ -653,13 +653,13 @@ void Cisc::exec()
 	}
 }
 
-//
-//
-//
+// update a single CPU instruction clock tick
 void Cisc::tick()
 {
 	timer++;
 
+	// check for timer interrupts
+	// TODO - allow freq to be set in reg/memory?
 	if (0 == (timer % 30))
 		interrupt(INT_VECTOR);
 
@@ -685,16 +685,12 @@ uint16_t Cisc::fetchW()
 	return word;
 }
 
-//
-//
-//
+// decode an instruction
 void Cisc::decode()
 {
 }
 
-//
-//
-//
+// push all registers onto the stack
 void Cisc::pushAll()
 {
 	push(LOBYTE(PC));
@@ -712,9 +708,7 @@ void Cisc::pushAll()
 	push(CC);
 }
 
-//
-//
-//
+// pop all registers from the stack
 void Cisc::popAll()
 {
 	CC = pop();
@@ -726,9 +720,7 @@ void Cisc::popAll()
 	PC = (pop() << 8) | pop();
 }
 
-//
-//
-//
+// process an interrupt request
 void Cisc::interrupt(uint32_t vector)
 {
 	// no re-entrant interrupts by default
@@ -745,9 +737,7 @@ void Cisc::interrupt(uint32_t vector)
 	PC = ram[vector] + (ram[vector + 1] << 8);
 }
 
-//
-//
-//
+// something seriously unexpected happened
 void Cisc::panic()
 {
 	puts("Panic!!!!!");
@@ -758,18 +748,14 @@ void Cisc::panic()
 	exit(-1);
 }
 
-//
 // show usage
-//
 void usage()
 {
 	puts("usage: cisc [options] filename\n");
 	exit(0);
 }
 
-//
 // get options from the command line
-//
 int getopt(int n, char *args[])
 {
 	int i;
@@ -810,8 +796,6 @@ uint16_t Cisc::getAddressFromToken(char *tok)
 	return addr;
 }
 
-//
-//
 //
 int main(int argc, char* argv[])
 {

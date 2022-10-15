@@ -74,14 +74,14 @@ JNE | branch on not equal | (none)
 NOP | no or null operation | (none)
 NOT | (not yet implemented)
 OR | logical OR of A and memory/immediate | ZNV
-POP | pop one or more registers from the stack
-PUSH | push one or more registers onto the stack
+POP | pop one or more registers from the stack | (none)
+PUSH | push one or more registers onto the stack | (none)
 RET | return from subroutine | (none)
 RTI | return from interrupt | (none)
-STA | store A to memory
-STX | store X to memory
+STA | store A to memory | (none)
+STX | store X to memory | (none)
 SUB | subtract memory/immediate from A | CZNV
-SWI | (not yet implemented)
+SWI | (not yet implemented) | I
 XOR | logical XOR of A and memory/immediate | ZNV
 
 ## Interrupts

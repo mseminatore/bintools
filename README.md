@@ -2,14 +2,14 @@
 
 ## What is bintools?
 
-This project provides a collection of code and tools for exploring Object 
-files. Specifically the [a.out](https://en.wikipedia.org/wiki/A.out) object 
-file format used by early PDP-11 and UNIX operating systems. The a.out format
-was used in Linux up until the 1.2 kernel.
+This project provides a collection of code and tools for exploring and working
+with Object files. Specifically the [a.out](https://en.wikipedia.org/wiki/A.out)
+object file format used by early PDP-11 and UNIX operating systems. The a.out 
+format was used in Linux up until the 1.2 kernel.
 
 > According to Wikipedia, the a.out file format was named as an abbreviated 
-> form of "assembler output" and was the filename of the output from Ken 
-> Thompson's PDP-7 assembler.
+> form of "assembler output" and was the defalt filename of the output from 
+> Ken Thompson's PDP-7 assembler.
 
 ## Why bintools?
 

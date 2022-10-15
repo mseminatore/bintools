@@ -74,9 +74,10 @@ JEQ | branc on equal
 
 The processor supports interrupts. Interrupts save the processor state and 
 branch to an interrupt handler. Interrupts are vectored through a table at
-the top of RAM. Entering an interrupt set the `I` or interrupt flag in `CC`.
-A new interrupt cannot occur while an interrupt is being services so 
-interrupt handlers must be short to avoid missing an interrupt.
+the top of RAM starting at 0xFF00. Entering an interrupt set the `I` or 
+interrupt flag in `CC`. A new interrupt cannot occur while an interrupt is 
+being services so interrupt handlers must be short to avoid missing an 
+interrupt.
 
 Interrupt | Vector address
 --------- | --------------
@@ -86,3 +87,19 @@ Timer | 0xFFFC
 On a `RTI` return from interrupt the processor state is restored.
 
 ## Debug monitor
+
+The debug monitor
+
+Command | Description
+------- | -----------
+b | list breakpoints
+b <name> | set breakpoint at <name>
+db <name> | dump byte at <name>
+dw <name> | dump word at <name>
+g | go, run the program
+m <name> | dump memory at <name>
+q | quit
+r | print registers
+s | single step
+y | clear breakpoints
+y <name> | clear breakpoint at <name>

@@ -61,26 +61,27 @@ containing operands.
 
 Instruction | Description
 ----------- | -----------
-ADD | A <- A + memory
-ADDI | A <- A + immediate
-SUB | 
-AND | 
-OR | 
-NOT | 
-XOR |
-LDA | load A from memory
-LDAI | load A from immediate
-LDX | load X from 
+ADD | add memory/immediate byte into A
+AND | logical AND of A and memory/immediate
 CALL | branch to a subroutine
-PUSH | push one or more registers onto the stack
-STA | store A
-STX | store X
-POP | pop one or more registers from the stack
-RET | return from subroutine
-RTI | return from interrupt
+LAX | load A using X as a pointer
+LDA | load A from memory/immediate
+LDX | load X from memory/immediate
+JEQ | branch on equal
 JMP | unconditional branch
 JNE | branch on not equal
-JEQ | branc on equal
+NOP | no or null operation
+NOT | (not yet implemented)
+OR | logical OR of A and memory/immediate
+POP | pop one or more registers from the stack
+PUSH | push one or more registers onto the stack
+RET | return from subroutine
+RTI | return from interrupt
+STA | store A to memory
+STX | store X to memory
+SUB | subtract memory/immediate from A
+SWI | (not yet implemented)
+XOR | logical XOR of A and memory/immediate
 
 ## Interrupts
 
@@ -139,6 +140,6 @@ g | go, run the program
 m name | dump memory at name
 q | quit
 r | print registers
-s | single step
-y | clear breakpoints
+s | single step the processor
+y | clear all breakpoints
 y name | clear breakpoint at name

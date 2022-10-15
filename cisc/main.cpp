@@ -156,6 +156,7 @@ public:
 	void dumpMemoryAt(uint32_t addr)
 	{
 		hexDumpLine(stdout, addr, &ram[addr]);
+		hexDumpLine(stdout, addr + 16, &ram[addr + 16]);
 	}
 };
 

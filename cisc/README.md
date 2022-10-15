@@ -59,29 +59,30 @@ I | Interrupt flag
 Instruction opcodes are 8-bits in length and include zero or more bytes 
 containing operands.
 
-Instruction | Description
------------ | -----------
-ADD | add memory/immediate byte into A
-AND | logical AND of A and memory/immediate
-CALL | branch to a subroutine
-LAX | load A using X as a pointer
-LDA | load A from memory/immediate
-LDX | load X from memory/immediate
-JEQ | branch on equal
-JMP | unconditional branch
-JNE | branch on not equal
-NOP | no or null operation
+Instruction | Description | Flags
+----------- | ----------- | -----
+ADD | add memory/immediate byte into A | CZNV
+AND | logical AND of A and memory/immediate | ZNV
+CALL | branch to a subroutine | (none)
+LAX | load A using X as a pointer | ZNV
+LDA | load A from memory/immediate | ZNV
+LDX | load X from memory/immediate | ZNV
+LXX | load X from addres pointed to by X | ZNV
+JEQ | branch on equal | (none)
+JMP | unconditional branch | (none)
+JNE | branch on not equal | (none)
+NOP | no or null operation | (none)
 NOT | (not yet implemented)
-OR | logical OR of A and memory/immediate
+OR | logical OR of A and memory/immediate | ZNV
 POP | pop one or more registers from the stack
 PUSH | push one or more registers onto the stack
-RET | return from subroutine
-RTI | return from interrupt
+RET | return from subroutine | (none)
+RTI | return from interrupt | (none)
 STA | store A to memory
 STX | store X to memory
-SUB | subtract memory/immediate from A
+SUB | subtract memory/immediate from A | CZNV
 SWI | (not yet implemented)
-XOR | logical XOR of A and memory/immediate
+XOR | logical XOR of A and memory/immediate | ZNV
 
 ## Interrupts
 

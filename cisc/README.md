@@ -56,14 +56,26 @@ I | Interrupt flag
 
 ## Instructions
 
+Instruction opcodes are 8-bits in length and include zero or more bytes 
+containing operands.
+
 Instruction | Description
 ----------- | -----------
 ADD | A <- A + memory
 ADDI | A <- A + immediate
+SUB | 
+AND | 
+OR | 
+NOT | 
+XOR |
 LDA | load A from memory
 LDAI | load A from immediate
 LDX | load X from 
 CALL | branch to a subroutine
+PUSH | push one or more registers onto the stack
+STA | store A
+STX | store X
+POP | pop one or more registers from the stack
 RET | return from subroutine
 RTI | return from interrupt
 JMP | unconditional branch
@@ -83,23 +95,25 @@ Interrupt | Vector address
 --------- | --------------
 Reset | 0xFFFE
 Timer | 0xFFFC
+SWI | 0xFFFA
 
 On a `RTI` return from interrupt the processor state is restored.
 
 ## Debug monitor
 
-The debug monitor
+The debug monitor supports a number of commands. Where possible I tried to 
+follow gdb or lldb conventions.
 
 Command | Description
 ------- | -----------
 b | list breakpoints
-b <name> | set breakpoint at <name>
-db <name> | dump byte at <name>
-dw <name> | dump word at <name>
+b name | set breakpoint at name
+db name | dump byte at name
+dw name | dump word at name
 g | go, run the program
-m <name> | dump memory at <name>
+m name | dump memory at name
 q | quit
 r | print registers
 s | single step
 y | clear breakpoints
-y <name> | clear breakpoint at <name>
+y name | clear breakpoint at name

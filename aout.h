@@ -129,21 +129,21 @@ public:
 	uint32_t addData(uint8_t item);
 	uint32_t allocBSS(size_t size);
 
-	uint32_t getTextSize()		{ return text_segment.size(); }
-	uint32_t getDataSize()		{ return data_segment.size(); }
-	uint32_t getBssSize()		{ return file_header.a_bss; }
-	uint32_t getEntryPoint()	{ return file_header.a_entry; }
+	uint32_t getTextSize() const		{ return text_segment.size(); }
+	uint32_t getDataSize() const		{ return data_segment.size(); }
+	uint32_t getBssSize() const			{ return file_header.a_bss; }
+	uint32_t getEntryPoint() const		{ return file_header.a_entry; }
 
-	uint32_t getTextRelocSize() { return file_header.a_trsize; }
-	uint32_t getDataRelocSize() { return file_header.a_drsize; }
+	uint32_t getTextRelocSize() const { return file_header.a_trsize; }
+	uint32_t getDataRelocSize() const { return file_header.a_drsize; }
 
 	void setTextBase(uint32_t base) { textBase = base; }
 	void setDataBase(uint32_t base) { dataBase = base; }
 	void setBssBase(uint32_t base)	{ bssBase = base; }
 
-	uint32_t getTextBase()	{ return textBase; }
-	uint32_t getDataBase()	{ return dataBase; }
-	uint32_t getBssBase()	{ return bssBase; }
+	uint32_t getTextBase() const	{ return textBase; }
+	uint32_t getDataBase() const	{ return dataBase; }
+	uint32_t getBssBase() const		{ return bssBase; }
 
 	uint8_t *textPtr() { return text_segment.data(); }
 	uint8_t *dataPtr() { return data_segment.data(); }

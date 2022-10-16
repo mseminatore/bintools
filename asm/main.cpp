@@ -213,6 +213,7 @@ AsmParser::AsmParser() : BaseParser(std::make_unique<SymbolTable>())
 	m_lexer->setCharLiterals(true);
 	m_lexer->setASMComments(true);
 	m_lexer->setHexNumbers(true);
+	m_lexer->caseSensitive(false);
 }
 
 // We saw a new symbol declaration. Fixup any intra-segment forward references to this symbol

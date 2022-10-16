@@ -205,22 +205,17 @@ int getopt(int n, char *args[])
 }
 
 //
-//
-//
 AsmParser::AsmParser() : BaseParser(std::make_unique<SymbolTable>())
 {
 	m_lexer = std::make_unique<LexicalAnalyzer>(_tokenTable, this, &yylval);
 
 	// setup our lexical options
 	m_lexer->setCharLiterals(true);
-	m_lexer->setCPPComments(true);
 	m_lexer->setASMComments(true);
 	m_lexer->setHexNumbers(true);
 }
 
-//
 // We saw a new symbol declaration. Fixup any intra-segment forward references to this symbol
-//
 void AsmParser::applyFixups(const std::string &str, uint16_t addr)
 {
 	auto iter = fixups.find(str);
@@ -241,9 +236,7 @@ void AsmParser::applyFixups(const std::string &str, uint16_t addr)
 	fixups.erase(iter);
 }
 
-//
 // We found an inferred forward reference to a symbol, add the location to fixups list
-//
 void AsmParser::addFixup(const std::string &str, uint16_t addr)
 {
 	auto iter = fixups.find(str);
@@ -259,9 +252,7 @@ void AsmParser::addFixup(const std::string &str, uint16_t addr)
 	}
 }
 
-//
 // Allocate a data byte in the data segment
-//
 void AsmParser::dataByte(SymbolEntry *sym)
 {
 	SymbolEntity se;
@@ -288,9 +279,7 @@ void AsmParser::dataByte(SymbolEntry *sym)
 	}
 }
 
-//
-//
-//
+// Allocate a data word in the data segment
 void AsmParser::dataWord(SymbolEntry *sym)
 {
 	SymbolEntity se;
@@ -313,9 +302,7 @@ void AsmParser::dataWord(SymbolEntry *sym)
 	}
 }
 
-//
-//
-//
+// Allocate a data string in the data segment
 void AsmParser::dataString(SymbolEntry *sym)
 {
 	SymbolEntity se;
@@ -347,9 +334,7 @@ void AsmParser::dataString(SymbolEntry *sym)
 	match(TV_STRING);
 }
 
-//
-//
-//
+// Parse a label or symbol name
 void AsmParser::label()
 {
 	// we found a new symbol
@@ -410,9 +395,7 @@ void AsmParser::label()
 	}
 }
 
-//
-// a single register
-//
+// Parse a single register
 uint8_t AsmParser::reg()
 {
 	uint8_t reg = 0;
@@ -448,9 +431,7 @@ uint8_t AsmParser::reg()
 	return reg;
 }
 
-//
-// a set of registers
-//
+// Parse a set of registers
 uint8_t AsmParser::regSet()
 {
 	uint8_t val, regs = 0;
@@ -465,9 +446,7 @@ uint8_t AsmParser::regSet()
 	return regs;
 }
 
-//
-//
-//
+// Add a code segment relocation entry
 void AsmParser::addTextRelocation(uint32_t addr, uint32_t length, uint32_t index, bool external)
 {
 	RelocationEntry re;
@@ -515,9 +494,7 @@ void AsmParser::imm8(int op)
 	match();
 }
 
-//
 // We are expecting a 16b immediate value or a named immediate value
-//
 void AsmParser::imm16(int op)
 {
 	bool bSegmentRelative = false;
@@ -577,8 +554,6 @@ void AsmParser::imm16(int op)
 }
 
 //
-//
-//
 bool AsmParser::isDataLabel(int type)
 {
 	if (type == stDataByte || type == stDataWord || type == stDataString)
@@ -586,9 +561,7 @@ bool AsmParser::isDataLabel(int type)
 	return false;
 }
 
-//
-// an immediate value or an address
-//
+// Parse an immediate value or an address
 void AsmParser::memOperand(int immOp, int memOp, bool isWordValue)
 {
 	bool bSegmentRelative = false;
@@ -654,9 +627,7 @@ void AsmParser::memOperand(int immOp, int memOp, bool isWordValue)
 	match(']');
 }
 
-//
 // Parse a 16b data address or label
-//
 void AsmParser::dataAddress(int op)
 {
 	bool bSegmentRelative = false;
@@ -692,9 +663,7 @@ void AsmParser::dataAddress(int op)
 	match();
 }
 
-//
 // Parse a 16b code address or label
-//
 void AsmParser::codeAddress(int op)
 {
 	bool bSegmentRelative = false;
@@ -746,9 +715,7 @@ void AsmParser::codeAddress(int op)
 	match();
 }
 
-//
-//
-//
+// Parse include files
 void AsmParser::include()
 {
 	match(TV_INCLUDE);
@@ -757,9 +724,7 @@ void AsmParser::include()
 	match(TV_STRING);
 }
 
-//
 // Parse file-level constructs
-//
 void AsmParser::file()
 {
 	SymbolEntity se;
@@ -931,9 +896,7 @@ void AsmParser::file()
 	}
 }
 
-//
-//
-//
+// Top-level of parser
 int AsmParser::yyparse()
 {
 	BaseParser::yyparse();
@@ -963,8 +926,6 @@ int AsmParser::yyparse()
 }
 
 //
-//
-//
 int main(int argc, char* argv[])
 {
 	if (argc == 1)
@@ -972,12 +933,12 @@ int main(int argc, char* argv[])
 
 	int iFirstArg = getopt(argc, argv);
 
+	// TODO - #21 handle multiple files on the command line?
 	{
 		AsmParser parser;
 
 		parser.yydebug = g_bDebug;
 
-		// TODO - handle multiple files on the command line?
 		parser.parseFile(argv[iFirstArg]);
 	}
 

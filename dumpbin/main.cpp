@@ -65,8 +65,6 @@ int getopt(int n, char *args[])
 }
 
 //
-//
-//
 void testGen()
 {
 	ObjectFile a;

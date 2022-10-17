@@ -180,6 +180,7 @@ void usage()
 	puts("usage: asm [options] filename\n");
 	puts("-v\tverbose output");
 	puts("-o file\tset output filename");
+
 	exit(0);
 }
 

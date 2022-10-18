@@ -791,7 +791,10 @@ uint16_t Cisc::getAddressFromToken(char *tok)
 	if (isdigit(tok[0]))
 		addr = (uint16_t)strtoul(tok, nullptr, base);
 	else
-		getSymbolAddress(tok, addr);
+	{
+		if (!getSymbolAddress(tok, addr))
+			printf("Symbol '%s' not found!\n", tok);
+	}
 
 	return addr;
 }

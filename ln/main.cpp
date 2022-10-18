@@ -108,7 +108,7 @@ int main(int argc, char* argv[])
 	// create variable for end of bss segment / start of RAM
 	se.value = pObj->allocBSS(1);
 	se.type = SET_BSS;
-	pObj->addSymbol("___ram_start", se);
+	pObj->addSymbol("__ram_start", se);
 
 	// possibly adjust base code address...
 	files[0]->setTextBase(g_bBaseAddr);

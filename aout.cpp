@@ -2,19 +2,19 @@
 #include <assert.h>
 #include <ctype.h>
 
+//
 ObjectFile::ObjectFile()
 {
 	clear();
 }
 
+//
 ObjectFile::~ObjectFile()
 {
 
 }
 
-//
-//
-//
+// reset the state of this object file
 void ObjectFile::clear()
 {
 	// init file header properties
@@ -38,17 +38,13 @@ void ObjectFile::clear()
 	textBase = dataBase = bssBase = 0;
 }
 
-//
-//
-//
+// return the symbol at the given index
 SymbolEntity ObjectFile::symbolAt(size_t index)
 {
 	return symbolTable[index].second;
 }
 
-//
-//
-//
+// find the symbol by name
 bool ObjectFile::findSymbol(const std::string &name, SymbolEntity &sym)
 {
 	auto index = indexOfSymbol(name);
@@ -61,6 +57,7 @@ bool ObjectFile::findSymbol(const std::string &name, SymbolEntity &sym)
 	return false;
 }
 
+// find a symbol by address
 bool ObjectFile::findSymbolByAddr(uint16_t addr, std::string &name)
 {
 	name = "<none>";
@@ -75,22 +72,22 @@ bool ObjectFile::findSymbolByAddr(uint16_t addr, std::string &name)
 }
 
 //
-//
-//
 void ObjectFile::concat(ObjectFile *rhs)
 {
 	// combine headers
-	file_header.a_bss += rhs->file_header.a_bss;
-	file_header.a_data += rhs->file_header.a_data;
-	file_header.a_text += rhs->file_header.a_text;
-	file_header.a_drsize += rhs->file_header.a_drsize;
-	file_header.a_trsize += rhs->file_header.a_trsize;
+	file_header.a_bss		+= rhs->file_header.a_bss;
+	file_header.a_data		+= rhs->file_header.a_data;
+	file_header.a_text		+= rhs->file_header.a_text;
+	file_header.a_drsize	+= rhs->file_header.a_drsize;
+	file_header.a_trsize	+= rhs->file_header.a_trsize;
 
-	// merge segments
+	// merge contents of text and data segments
 	text_segment.insert(text_segment.end(), rhs->text_segment.begin(), rhs->text_segment.end());
 	data_segment.insert(data_segment.end(), rhs->data_segment.begin(), rhs->data_segment.end());
 
-	// merge symbols
+	// Note: the bss is all zero so no merging required
+
+	// merge the symbols
 	for (auto it = rhs->symbolTable.begin(); it != rhs->symbolTable.end(); it++)
 	{
 		// see if the rhs symbol exists in this module
@@ -107,8 +104,10 @@ void ObjectFile::concat(ObjectFile *rhs)
 
 			if (sym->type & SET_TEXT)
 				sym->value = it->second.value + rhs->getTextBase();
-			else 
+			else if (sym->type & SET_DATA)
 				sym->value = it->second.value + rhs->getDataBase();
+			else
+				assert(false);
 		}
 		else
 		{
@@ -118,8 +117,10 @@ void ObjectFile::concat(ObjectFile *rhs)
 				auto sym = it->second;
 				if (it->second.type & SET_TEXT)
 					sym.value = it->second.value + rhs->getTextBase();
-				else
+				else if (it->second.type & SET_DATA)
 					sym.value = it->second.value + rhs->getDataBase();
+				else
+					sym.value = it->second.value + rhs->getBssBase();
 
 				addSymbol(it->first, sym);
 			}
@@ -142,8 +143,10 @@ void ObjectFile::concat(ObjectFile *rhs)
 
 				if (sym->type & SET_TEXT)
 					it->index = SEG_TEXT;
-				else 
+				else if (sym->type & SET_DATA)
 					it->index = SEG_DATA;
+				else
+					assert(false);
 			}
 		}
 	}
@@ -158,19 +161,21 @@ void ObjectFile::concat(ObjectFile *rhs)
 
 		if (it->index == SEG_TEXT)
 			re.address += rhs->getTextBase();
-		else
+		else if (it->index == SEG_DATA)
 			re.address += rhs->getDataBase();
+		else if (it->index == SEG_BSS)
+			re.address += rhs->getBssBase();
+		else
+			assert(false);
 
 		textRelocs.push_back(re);
 	}
 }
 
 //
-//
-//
 bool ObjectFile::relocate(const std::vector<ObjectFile*> &modules)
 {
-	// for each relocation
+	// for each code segment relocation
 	for (auto it = textRelocs.begin(); it != textRelocs.end(); it++)
 	{
 		int iSymbolFound = 0;
@@ -207,6 +212,13 @@ bool ObjectFile::relocate(const std::vector<ObjectFile*> &modules)
 							text_segment[it->address + 1] = HIBYTE(addr);
 							iSymbolFound++;
 						}
+						else if (externSym.type & SET_BSS)
+						{
+							auto addr = module->getBssBase() + externSym.value;
+							text_segment[it->address] = LOBYTE(addr);
+							text_segment[it->address + 1] = HIBYTE(addr);
+							iSymbolFound++;
+						}
 						else
 						{
 							assert(false);
@@ -238,7 +250,12 @@ bool ObjectFile::relocate(const std::vector<ObjectFile*> &modules)
 			{
 				addr = dataBase + text_segment[it->address] + (text_segment[it->address + 1] << 8);
 			}
+			else if (it->index == SEG_BSS)
+			{
+				assert(false);
+			}
 
+			// patch the address in code segment
 			text_segment[it->address] = LOBYTE(addr);
 			text_segment[it->address + 1] = HIBYTE(addr);
 		}
@@ -247,6 +264,7 @@ bool ObjectFile::relocate(const std::vector<ObjectFile*> &modules)
 	return true;
 }
 
+//
 int ObjectFile::writeFile(const std::string &name)
 {
 	FILE *f = fopen(name.c_str(), "wb");
@@ -261,6 +279,7 @@ int ObjectFile::writeFile(const std::string &name)
 	return result;
 }
 
+//
 int ObjectFile::writeFile(FILE *fptr)
 {
 	assert(fptr != nullptr);
@@ -268,11 +287,11 @@ int ObjectFile::writeFile(FILE *fptr)
 		return -1;
 
 	// update the header
-	file_header.a_text = text_segment.size();
-	file_header.a_data = data_segment.size();
-	file_header.a_trsize = textRelocs.size();
-	file_header.a_drsize = dataRelocs.size();
-	file_header.a_syms = symbolTable.size();
+	file_header.a_text		= text_segment.size();
+	file_header.a_data		= data_segment.size();
+	file_header.a_trsize	= textRelocs.size();
+	file_header.a_drsize	= dataRelocs.size();
+	file_header.a_syms		= symbolTable.size();
 
 	// write the header
 	auto result = fwrite(&file_header, sizeof(file_header), 1, fptr);
@@ -311,6 +330,7 @@ int ObjectFile::writeFile(FILE *fptr)
 	return 0;
 }
 
+//
 int ObjectFile::readFile(const std::string &name)
 {
 	FILE *f = fopen(name.c_str(), "rb");
@@ -325,6 +345,7 @@ int ObjectFile::readFile(const std::string &name)
 	return result;
 }
 
+//
 int ObjectFile::readFile(FILE *fptr)
 {
 	assert(fptr != nullptr);
@@ -397,6 +418,7 @@ int ObjectFile::readFile(FILE *fptr)
 	return 0;
 }
 
+//
 uint32_t ObjectFile::allocBSS(size_t size)
 {
 	uint32_t loc = file_header.a_bss;
@@ -405,6 +427,7 @@ uint32_t ObjectFile::allocBSS(size_t size)
 	return loc;
 }
 
+//
 uint32_t ObjectFile::addText(uint8_t item)
 {
 	uint32_t addr = text_segment.size();
@@ -412,6 +435,7 @@ uint32_t ObjectFile::addText(uint8_t item)
 	return addr;
 }
 
+//
 uint32_t ObjectFile::addData(uint8_t item)
 {
 	uint32_t addr = data_segment.size();
@@ -419,6 +443,7 @@ uint32_t ObjectFile::addData(uint8_t item)
 	return addr;
 }
 
+//
 void ObjectFile::addSymbol(const std::string &name, SymbolEntity &sym)
 {
 	auto it = symbolLookup.find(name);
@@ -441,6 +466,7 @@ void ObjectFile::addSymbol(const std::string &name, SymbolEntity &sym)
 	symbolRLookup.insert(SymbolRLookup::value_type(sym.value, name));
 }
 
+//
 uint32_t ObjectFile::addString(const std::string &name)
 {
 	uint32_t offset = stringTable.size();
@@ -454,6 +480,7 @@ uint32_t ObjectFile::addString(const std::string &name)
 	return offset;
 }
 
+//
 size_t ObjectFile::indexOfSymbol(const std::string &name)
 {
 	auto iter = symbolLookup.find(name);
@@ -464,16 +491,19 @@ size_t ObjectFile::indexOfSymbol(const std::string &name)
 	return iter->second;
 }
 
+//
 void ObjectFile::addTextRelocation(RelocationEntry &r)
 {
 	textRelocs.push_back(r);
 }
 
+//
 void ObjectFile::addDataRelocation(RelocationEntry &r)
 {
 	dataRelocs.push_back(r);
 }
 
+//
 void ObjectFile::dumpHeader(FILE *f)
 {
 	assert(f != nullptr);
@@ -494,8 +524,6 @@ void ObjectFile::dumpHeader(FILE *f)
 }
 
 //
-//
-//
 void hexDumpGroup(FILE *f, uint8_t *buf)
 {
 	for (int item = 0; item < 4; item++)
@@ -504,8 +532,6 @@ void hexDumpGroup(FILE *f, uint8_t *buf)
 	}
 }
 
-//
-//
 //
 void hexDumpLine(FILE *f, uint32_t offset, uint8_t *buf)
 {
@@ -536,8 +562,6 @@ void hexDumpLine(FILE *f, uint32_t offset, uint8_t *buf)
 }
 
 //
-//
-//
 void hexDumpSegment(FILE *f, uint8_t *seg, size_t size)
 {
 	uint32_t offset = 0;
@@ -558,6 +582,7 @@ void hexDumpSegment(FILE *f, uint8_t *seg, size_t size)
 	hexDumpLine(f, offset, lastLine);
 }
 
+//
 void ObjectFile::dumpText(FILE *f)
 {
 	assert(f != nullptr);
@@ -572,6 +597,7 @@ void ObjectFile::dumpText(FILE *f)
 	fputc('\n', f);
 }
 
+//
 void ObjectFile::dumpData(FILE *f)
 {
 	assert(f != nullptr);
@@ -586,6 +612,7 @@ void ObjectFile::dumpData(FILE *f)
 	fputc('\n', f);
 }
 
+// output the text relocations
 void ObjectFile::dumpTextRelocs(FILE *f)
 {
 	assert(f != nullptr);
@@ -608,6 +635,7 @@ void ObjectFile::dumpTextRelocs(FILE *f)
 	fputc('\n', f);
 }
 
+// output the data relocations
 void ObjectFile::dumpDataRelocs(FILE *f)
 {
 	assert(f != nullptr);
@@ -627,6 +655,7 @@ void ObjectFile::dumpDataRelocs(FILE *f)
 	fputc('\n', f);
 }
 
+// output all of the symbol names
 void ObjectFile::dumpSymbols(FILE *f)
 {
 	assert(f != nullptr);

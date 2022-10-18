@@ -105,15 +105,16 @@ int main(int argc, char* argv[])
 	pObj->addData(0xE0);
 	pObj->addSymbol("__brk", se);
 
-	// create variable for end of data segment start of RAM
-	se.value = pObj->addData(0xFE);
+	// create variable for end of bss segment / start of RAM
+	se.value = pObj->allocBSS(1);
+	se.type = SET_BSS;
 	pObj->addSymbol("___ram_start", se);
 
 	// possibly adjust base code address...
 	files[0]->setTextBase(g_bBaseAddr);
 
 	// compute code and data segment starts
-	log(LOG_VERBOSE, "Compute segment starts\n");
+	log(LOG_VERBOSE, "Compute data segment starts\n");
 	for (size_t i = 1; i < files.size(); i++)
 	{
 		uint32_t offset;
@@ -129,11 +130,12 @@ int main(int argc, char* argv[])
 		files[i]->setBssBase(offset);
 	}
 
-	// compute bss segment starts, requires
+	// compute bss segment starts, start of bss is at the end of the last data segment
 	size_t lastFile = files.size() - 1;
 	uint32_t bssOffset = files[lastFile]->getDataBase() + files[lastFile]->getDataSize();
 	files[0]->setBssBase(bssOffset);
 
+	log(LOG_VERBOSE, "Compute bss segment starts\n");
 	for (size_t i = 1; i < files.size(); i++)
 	{
 		uint32_t offset;

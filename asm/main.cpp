@@ -103,6 +103,9 @@ enum
 	TV_JMP,
 	TV_JNE,
 	TV_JEQ,
+	TV_JGT,
+	TV_JLT,
+
 	TV_RTI,
 
 	TV_AND,
@@ -143,6 +146,9 @@ TokenTable _tokenTable[] =
 	{ "JMP",	TV_JMP },
 	{ "JNE",	TV_JNE },
 	{ "JEQ",	TV_JEQ },
+	{ "JGT",	TV_JGT },
+	{ "JLT",	TV_JLT },
+
 	{ "RET",	TV_RET },
 	{ "RTI",	TV_RTI },
 
@@ -914,6 +920,14 @@ void AsmParser::file()
 
 		case TV_JEQ:
 			codeAddress(OP_JEQ);
+			break;
+
+		case TV_JGT:
+			codeAddress(OP_JGT);
+			break;
+
+		case TV_JLT:
+			codeAddress(OP_JLT);
 			break;
 
 		case TV_CALL:

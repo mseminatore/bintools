@@ -39,6 +39,8 @@ enum
 	OP_JMP,		// unconditional jump
 	OP_JNE,		// jump if not equal
 	OP_JEQ,		// jump if equal
+	OP_JGT,		// jump if greater than
+	OP_JLT,		// jump if less than
 
 	// loads and stores
 	OP_LDA,		// load A from memory

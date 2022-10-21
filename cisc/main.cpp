@@ -74,6 +74,7 @@ public:
 		maxStack = 0xFFFF;
 		timer = 0;
 	}
+	uint32_t Cisc::checkOverflow(uint16_t val);
 
 	uint16_t getMaxStack() { return RAM_END - maxStack; }
 	void push(uint8_t val);
@@ -366,12 +367,23 @@ void Cisc::updateFlag(uint32_t result, uint8_t flag)
 		CLRF(flag);
 }
 
-// TODO - update flags (CC)
+//
+uint32_t Cisc::checkOverflow(uint16_t val)
+{
+	auto check = val & 0x180;
+	if (check == 0x100 || check == 0x80)
+		return 1;
+
+	return 0;
+}
+
+//
 void Cisc::exec()
 {
 	std::string name;
 	uint8_t operand;
-	uint16_t addr, temp16;
+	uint16_t addr;
+	uint16_t temp16;
 
 	switch (opcode)
 	{
@@ -386,7 +398,7 @@ void Cisc::exec()
 		updateFlag(temp16 & 0xFF00, FLAG_C);
 		updateFlag(temp16 == 0, FLAG_Z);
 		updateFlag(temp16 & 0x80, FLAG_N);
-		updateFlag(temp16 & 0xFF00, FLAG_V);
+		updateFlag(checkOverflow(temp16), FLAG_V);
 
 		A = temp16 & 0xFF;
 		
@@ -400,7 +412,7 @@ void Cisc::exec()
 		updateFlag(temp16 & 0xFF00, FLAG_C);
 		updateFlag(temp16 == 0, FLAG_Z);
 		updateFlag(temp16 & 0x80, FLAG_N);
-		updateFlag(temp16 & 0xFF00, FLAG_V);
+		updateFlag(checkOverflow(temp16), FLAG_V);
 
 		A = temp16 & 0xFF;
 
@@ -420,7 +432,7 @@ void Cisc::exec()
 		updateFlag(temp16 & 0xFF00, FLAG_C);
 		updateFlag(temp16 == 0, FLAG_Z);
 		updateFlag(temp16 & 0x80, FLAG_N);
-		updateFlag(temp16 & 0xFF00, FLAG_V);
+		updateFlag(checkOverflow(temp16), FLAG_V);
 
 		A = temp16 & 0xFF;
 
@@ -429,12 +441,12 @@ void Cisc::exec()
 
 	case OP_SUBI:
 		operand = fetch();
-		temp16 = A - operand;
+		temp16 = A - /*(signed char)*/ operand;
 
 		updateFlag(temp16 & 0xFF00, FLAG_C);
 		updateFlag(temp16 == 0, FLAG_Z);
 		updateFlag(temp16 & 0x80, FLAG_N);
-		updateFlag(temp16 & 0xFF00, FLAG_V);
+		updateFlag(checkOverflow(temp16), FLAG_V);
 
 		A = temp16 & 0xFF;
 
@@ -556,6 +568,22 @@ void Cisc::exec()
 			PC = addr;
 
 		log("JEQ 0x%X", addr);
+		break;
+
+	case OP_JGT:
+		addr = fetchW();
+		if (!TSTF(FLAG_Z) && ( (TSTF(FLAG_N) && TSTF(FLAG_V)) || (!TSTF(FLAG_N) && !TSTF(FLAG_V)) ) )
+			PC = addr;
+
+		log("JGT 0x%X", addr);
+		break;
+
+	case OP_JLT:
+		addr = fetchW();
+		if ( (TSTF(FLAG_N) || TSTF(FLAG_V)) && !(TSTF(FLAG_N) && TSTF(FLAG_V)) )
+			PC = addr;
+
+		log("JLT 0x%X", addr);
 		break;
 
 	case OP_LAX:

@@ -269,7 +269,7 @@ int ObjectFile::writeFile(const std::string &name)
 {
 	FILE *f = fopen(name.c_str(), "wb");
 	if (nullptr == f)
-		return -1;
+		return EOF;
 
 	auto result = writeFile(f);
 	fclose(f);
@@ -284,7 +284,7 @@ int ObjectFile::writeFile(FILE *fptr)
 {
 	assert(fptr != nullptr);
 	if (fptr == nullptr)
-		return -1;
+		return EOF;
 
 	// update the header
 	file_header.a_text		= text_segment.size();

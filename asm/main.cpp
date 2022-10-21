@@ -930,6 +930,16 @@ void AsmParser::file()
 			match();
 			break;
 
+		case TV_SWI:
+			obj.addText(OP_SWI);
+			match();
+			break;
+
+		case TV_BRK:
+			obj.addText(OP_BRK);
+			match();
+			break;
+
 		default:
 			yyerror("unrecognized assembly instruction!");
 		}

@@ -14,7 +14,7 @@ was inspired by classic microprocessors like the `6502`, `6800` and `6809`.
 
 The CPU has a Harvard, or split memory, architecture. Which means that there 
 are separate address spaces for instruction code `I` and data `D`. The `I` is
-read-only memory and the `D` is read-write. You can think of this as 
+read-only memory and the `D` is read-write memory. You can think of this as 
 representing ROM and RAM.
 
 ## Registers

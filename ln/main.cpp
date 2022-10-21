@@ -126,8 +126,8 @@ int main(int argc, char* argv[])
 		files[i]->setDataBase(offset);
 
 		// TODO - the BSS segments should stack at the end of the data segments!!
-		offset = files[i - 1]->getBssBase() + files[i - 1]->getBssSize();
-		files[i]->setBssBase(offset);
+		//offset = files[i - 1]->getBssBase() + files[i - 1]->getBssSize();
+		//files[i]->setBssBase(offset);
 	}
 
 	// compute bss segment starts, start of bss is at the end of the last data segment
@@ -163,7 +163,7 @@ int main(int argc, char* argv[])
 		files[0]->concat(files[i]);
 	}
 
-	// TODO - set the entry point?
+	// set the entry point
 	log(LOG_VERBOSE, "Setting entry point to %04X\n", g_bBaseAddr);
 	files[0]->setEntryPoint(g_bBaseAddr);
 

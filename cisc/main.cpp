@@ -5,13 +5,17 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <ctype.h>
-//#include <vector>
 #include <set>
+#include <signal.h>
 
 // Flag bit helper functions
 #define SETF(flag) (CC |= flag)
 #define CLRF(flag) (CC &= ~flag)
 #define TSTF(flag) ((CC & flag) != 0)
+
+//
+bool singleStep = true;
+static const int SMALL_BUFFER = 256;
 
 // define our CPU arch
 class Cisc
@@ -21,7 +25,7 @@ protected:
 	uint8_t A, CC;
 
 	// 16-bit registers
-	uint16_t PC, SP, X;
+	uint16_t PC, SP, X, Y;
 	
 	// memory
 	uint8_t ram[0x10000];
@@ -36,7 +40,6 @@ protected:
 
 	// instruction buffer
 	uint8_t opcode;
-	static const int SMALL_BUFFER = 256;
 
 	void log(const char *fmt, ...);
 
@@ -56,10 +59,11 @@ public:
 	virtual ~Cisc() {}
 
 	void load(const std::string &filename);
+
 	void reset() 
 	{ 
 		A = CC = opcode = 0; 
-		X = 0;
+		X = Y = 0;
 
 		ram[RESET_VECTOR] = 0;
 		ram[RESET_VECTOR + 1] = 0;
@@ -137,20 +141,20 @@ public:
 	//
 	void printRegisters()
 	{
-		printf("A: %02X X: %04X CC: %02X SP: %04X PC: %04X\n", A, X, CC, SP, PC);
+		printf("A: %02X X: %04X Y: %04X CC: %02X SP: %04X PC: %04X\n", A, X, Y, CC, SP, PC);
 		printf("Flags C: %d Z: %d V: %d N: %d I: %d\n", TSTF(FLAG_C), TSTF(FLAG_Z), TSTF(FLAG_V), TSTF(FLAG_N), TSTF(FLAG_I));
 	}
 
 	void printByte(uint16_t addr)
 	{
-		printf("%d (0x%04X): %d (0x%02X)\n", addr, addr, ram[addr], ram[addr]);
+		printf("%d (0x%04X) points to -> %d (0x%02X)\n", addr, addr, ram[addr], ram[addr]);
 	}
 
 	void printWord(uint16_t addr)
 	{
 		uint16_t value = ram[addr] + (ram[addr + 1] << 8);
 
-		printf("%d (0x%04X): %d (0x%04X)\n", addr, addr, value, value);
+		printf("%d (0x%04X) points to -> %d (0x%04X)\n", addr, addr, value, value);
 	}
 
 	void dumpMemoryAt(uint32_t addr)
@@ -245,12 +249,15 @@ uint8_t Cisc::pop()
 	return val;
 }
 
+//
 void Cisc::getRegisterList(uint8_t operand, std::string &str)
 {
 	if (operand & REG_A)
 		str = "A ";
 	if (operand & REG_X)
 		str += "X ";
+	if (operand & REG_Y)
+		str += "Y ";
 	if (operand & REG_CC)
 		str += "CC ";
 	if (operand & REG_SP)
@@ -259,8 +266,6 @@ void Cisc::getRegisterList(uint8_t operand, std::string &str)
 		str += "PC ";
 }
 
-//
-//
 //
 void Cisc::log(const char *fmt, ...)
 {
@@ -274,8 +279,6 @@ void Cisc::log(const char *fmt, ...)
 	printf("%s\n", buf);
 }
 
-//
-//
 //
 void Cisc::pushRegs()
 {
@@ -301,6 +304,12 @@ void Cisc::pushRegs()
 		push(LOBYTE(X));
 	}
 
+	if (operand & REG_Y)
+	{
+		push(HIBYTE(Y));
+		push(LOBYTE(Y));
+	}
+
 	if (operand & REG_A)
 		push(A);
 
@@ -313,8 +322,6 @@ void Cisc::pushRegs()
 }
 
 //
-//
-//
 void Cisc::popRegs()
 {
 	uint8_t operand = fetch();
@@ -324,6 +331,11 @@ void Cisc::popRegs()
 
 	if (operand & REG_A)
 		A = pop();
+
+	if (operand & REG_Y)
+	{
+		Y = pop() | (pop() << 8);
+	}
 
 	if (operand & REG_X)
 	{
@@ -346,8 +358,6 @@ void Cisc::popRegs()
 }
 
 //
-//
-//
 void Cisc::updateFlag(uint32_t result, uint8_t flag)
 {
 	if (result)
@@ -356,9 +366,7 @@ void Cisc::updateFlag(uint32_t result, uint8_t flag)
 		CLRF(flag);
 }
 
-//
 // TODO - update flags (CC)
-//
 void Cisc::exec()
 {
 	std::string name;
@@ -397,6 +405,12 @@ void Cisc::exec()
 		A = temp16 & 0xFF;
 
 		log("ADD %d", operand);
+		break;
+
+	case OP_AAX:
+		X = X + A;
+
+		log("AAX");
 		break;
 
 	case OP_SUB:
@@ -522,6 +536,9 @@ void Cisc::exec()
 
 	case OP_JMP:
 		PC = fetchW();
+
+//		obj.findSymbolByAddr(PC, name);
+
 		log("JMP 0x%X", PC);
 		break;
 
@@ -648,6 +665,14 @@ void Cisc::exec()
 		popRegs();
 		break;
 
+	case OP_SWI:
+		interrupt(SWI_VECTOR);
+		break;
+
+	case OP_BRK:
+		interrupt(BRK_VECTOR);
+		break;
+
 	default:
 		panic();
 	}
@@ -703,6 +728,9 @@ void Cisc::pushAll()
 	push(LOBYTE(X));
 	push(HIBYTE(X));
 
+	push(LOBYTE(Y));
+	push(HIBYTE(Y));
+
 	push(A);
 
 	push(CC);
@@ -715,7 +743,9 @@ void Cisc::popAll()
 
 	A = pop();
 
+	Y = (pop() << 8) | pop();
 	X = (pop() << 8) | pop();
+
 	SP = (pop() << 8) | pop();
 	PC = (pop() << 8) | pop();
 }
@@ -799,12 +829,23 @@ uint16_t Cisc::getAddressFromToken(char *tok)
 	return addr;
 }
 
+// Ctrl-C pressed
+void sigint(int val)
+{
+	singleStep = true;
+}
+
+// Break key pressed
+void sigbreak(int val)
+{
+	singleStep = true;
+}
+
 //
 int main(int argc, char* argv[])
 {
 	bool done = false;
-	bool singleStep = true;
-	char buf[256];
+	char buf[SMALL_BUFFER];
 
 	if (argc == 1)
 		usage();
@@ -815,15 +856,19 @@ int main(int argc, char* argv[])
 
 	cpu.load(argv[iFirstArg]);
 
+	signal(SIGINT, sigint);
+	signal(SIGBREAK, sigbreak);
+
 	while (!done)
 	{
 		if (singleStep)
 		{
 			printf(">");
-			fgets(buf, 255, stdin);
+			fgets(buf, SMALL_BUFFER - 1, stdin);
 
 			char *pToken = strtok(buf, " \n");
-			if (!strcmp(pToken, "s"))
+
+			if (!pToken || !strcmp(pToken, "s"))
 				cpu.tick();
 			else if (!strcmp(pToken, "r"))
 				cpu.printRegisters();

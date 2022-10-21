@@ -264,7 +264,7 @@ bool ObjectFile::relocate(const std::vector<ObjectFile*> &modules)
 	return true;
 }
 
-//
+// write out the object file to the named file
 int ObjectFile::writeFile(const std::string &name)
 {
 	FILE *f = fopen(name.c_str(), "wb");
@@ -279,7 +279,7 @@ int ObjectFile::writeFile(const std::string &name)
 	return result;
 }
 
-//
+// write out the object file to the given stream
 int ObjectFile::writeFile(FILE *fptr)
 {
 	assert(fptr != nullptr);
@@ -330,14 +330,17 @@ int ObjectFile::writeFile(FILE *fptr)
 	return 0;
 }
 
-//
+// read in the named object file
 int ObjectFile::readFile(const std::string &name)
 {
 	FILE *f = fopen(name.c_str(), "rb");
 	if (nullptr == f)
-		return -1;
+		return EOF;
 
 	auto result = readFile(f);
+	if (result)
+		return EOF;
+
 	fclose(f);
 
 	filename = name;
@@ -345,17 +348,19 @@ int ObjectFile::readFile(const std::string &name)
 	return result;
 }
 
-//
+// read an object file from the given stream
 int ObjectFile::readFile(FILE *fptr)
 {
 	assert(fptr != nullptr);
 	if (fptr == nullptr)
-		return -1;
+		return EOF;
 
 	clear();
 
 	// read the header
 	auto result = fread(&file_header, sizeof(file_header), 1, fptr);
+	if (result != 1)
+		return EOF;
 
 	// read the text segment
 	for (int i = 0; i < file_header.a_text; i++)
@@ -406,6 +411,7 @@ int ObjectFile::readFile(FILE *fptr)
 		c = fgetc(fptr);
 	}
 
+	// read the symbols
 	for (int i = 0; i < file_header.a_syms; i++)
 	{
 		auto sym = st[i];
@@ -418,16 +424,16 @@ int ObjectFile::readFile(FILE *fptr)
 	return 0;
 }
 
-//
+// alloc space in bss segment and return its address
 uint32_t ObjectFile::allocBSS(size_t size)
 {
-	uint32_t loc = file_header.a_bss;
+	uint32_t addr = file_header.a_bss;
 	file_header.a_bss += size;
 
-	return loc;
+	return addr;
 }
 
-//
+// alloc/assign byte to code segment and return its address
 uint32_t ObjectFile::addText(uint8_t item)
 {
 	uint32_t addr = text_segment.size();
@@ -435,7 +441,7 @@ uint32_t ObjectFile::addText(uint8_t item)
 	return addr;
 }
 
-//
+// alloc/assign data byte to data segment and return its address
 uint32_t ObjectFile::addData(uint8_t item)
 {
 	uint32_t addr = data_segment.size();
@@ -682,6 +688,6 @@ void ObjectFile::dumpSymbols(FILE *f)
 		if (sym.second.type & SET_UNDEFINED)
 			type += " external";
 
-		fprintf(f, "%15s\t%s segment offset: %d (0x%04X)\n", sym.first.c_str(), type.c_str(), sym.second.value, sym.second.value);
+		fprintf(f, "%15s\t%s segment\toffset: %d (0x%04X)\n", sym.first.c_str(), type.c_str(), sym.second.value, sym.second.value);
 	}
 }

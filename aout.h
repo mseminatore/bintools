@@ -3,14 +3,22 @@
 
 #pragma once
 
+// we are not secure CRT compliant at this time
 #define _CRT_SECURE_NO_WARNINGS
 
-#define LOBYTE(val) ((val) & 0xFF)
-#define HIBYTE(val) (((val) & 0xFF00) >> 8)
+// byte-level access macros
+#ifndef LOBYTE
+#	define LOBYTE(val) ((val) & 0xFF)
+#endif
+
+#ifndef HIBYTE
+#	define HIBYTE(val) (((val) & 0xFF00) >> 8)
+#endif
 
 #include <vector>
 #include <map>
 
+// Define the a.out header
 struct AOUT_HEADER
 {
 	int a_magic;	// magic number
@@ -23,14 +31,15 @@ struct AOUT_HEADER
 	int a_drsize;	// data relocation size
 };
 
+// Validate the size of the a.out struct
 static_assert(sizeof(AOUT_HEADER) == 32, "Invalid a.out header size!");
 
 // Segment types for relocation entries
 enum
 {
-	SEG_TEXT,
-	SEG_DATA,
-	SEG_BSS
+	SEG_TEXT,		// code segment
+	SEG_DATA,		// data segment
+	SEG_BSS			// uninitialized data segment
 };
 
 // Symbol Entity types
@@ -44,6 +53,7 @@ enum
 	SET_UNDEFINED = 32	// symbol not defined in this module
 };
 
+// Define the RelocationEntry type
 struct RelocationEntry
 {
 	uint32_t	address;		// offset within the segment (data or text) of the relocation item
@@ -62,23 +72,21 @@ struct RelocationEntry
 	}
 };
 
+// Validate the size of the relocation entry struct
 static_assert(sizeof(RelocationEntry) == 8, "Invalid relocation entry!");
 
-//
-//
-//
+// Define the symbol entity struct
 struct SymbolEntity
 {
 	uint32_t nameOffset;	// offset in the string table of the null-terminated name of the symbol
-	uint32_t type;
-	uint32_t value;
+	uint32_t type;			// one of the Symbol Entity Type (SET_xxx) enumerations
+	uint32_t value;			// address offset in the current segment
 };
 
+// Validate the size of the symbol entity struct
 static_assert(sizeof(SymbolEntity) == 12, "Invalid symbol entry!");
 
-//
-//
-//
+// Define the object file class
 class ObjectFile
 {
 protected:

@@ -6,18 +6,23 @@
 //
 // Memory map
 //
-#define RAM_END			0xFF00
-#define RESET_VECTOR	0xFFFE
-#define INT_VECTOR		0xFFFC
-#define SWI_VECTOR		0xFFFA
+#define RAM_END			0xFF00	// above this address is reserved for interrupt vectors
+#define RESET_VECTOR	0xFFFE	// addr of reset interrupt handler
+#define INT_VECTOR		0xFFFC	// addr of timer interrupt handler
+#define SWI_VECTOR		0xFFFA	// addr of software interrupt handler
+#define BRK_VECTOR		0xFFF8	// addr of breakpoint interrupt
 
 enum
 {
-	OP_NOP,
+	OP_NOP,		// no operation
 
 	// arithmetic
-	OP_ADD,	OP_ADDI,
-	OP_SUB,	OP_SUBI,
+	OP_ADD,		// A = A + memory
+	OP_ADDI,	// A = A + immediate
+	OP_AAX,		// X = X + A
+
+	OP_SUB,		// A = A - memory
+	OP_SUBI,	// A = A - immediate
 
 	// logical
 	OP_AND, OP_ANDI,
@@ -54,7 +59,10 @@ enum
 
 	// stack
 	OP_PUSH,	// push one or more registers on the stack
-	OP_POP		// pop one or more registers from the stack
+	OP_POP,		// pop one or more registers from the stack
+	
+	OP_BRK,		// breakpoint interrupt
+	OP_SWI,		// software interrupt
 };
 
 //
@@ -64,9 +72,10 @@ enum
 {
 	REG_A = 1,		// bit 0
 	REG_X = 2,		// bit 1
-	REG_SP = 4,		// bit 2
-	REG_CC = 8,		// bit 3
-	REG_PC = 16		// bit 4
+	REG_Y = 4,		// bit 2
+	REG_SP = 8,		// bit 3
+	REG_CC = 16,	// bit 4
+	REG_PC = 32		// bit 5
 };
 
 //
@@ -79,6 +88,7 @@ enum
 	FLAG_V = 4,		// bit 2
 	FLAG_N = 8,		// bit 3
 	FLAG_I = 16,	// bit 4
+
 	FLAG_ALL = 0xFF
 };
 

@@ -73,6 +73,7 @@ enum
 	TV_NOP = TV_USER,
 	TV_ADD,
 	TV_SUB,
+	TV_AAX,
 
 	TV_LDA,
 	TV_LDX,
@@ -85,6 +86,7 @@ enum
 
 	TV_A,
 	TV_X,
+	TV_Y,
 	TV_CC,
 	TV_SP,
 	TV_PC,
@@ -113,6 +115,9 @@ enum
 	TV_PUSH,
 	TV_POP,
 
+	TV_BRK,
+	TV_SWI,
+
 	TV_PUBLIC,
 	TV_EXTERN,
 	TV_PROC,
@@ -127,6 +132,7 @@ TokenTable _tokenTable[] =
 	{ "NOP",	TV_NOP },
 	{ "ADD",	TV_ADD },
 	{ "SUB",	TV_SUB },
+	{ "AAX",	TV_AAX },
 
 	{ "AND",	TV_AND },
 	{ "OR",		TV_OR },
@@ -157,12 +163,16 @@ TokenTable _tokenTable[] =
 
 	{ "A",		TV_A },
 	{ "X",		TV_X },
+	{ "Y",		TV_Y },
 	{ "CC",		TV_CC },
 	{ "SP",		TV_SP },
 	{ "PC",		TV_PC },
 
 	{ "PUSH",	TV_PUSH },
 	{ "POP",	TV_POP },
+
+	{ "BRK",	TV_BRK},
+	{ "SWI",	TV_SWI},
 
 	{ "PUBLIC",	TV_PUBLIC },
 	{ "EXTERN",	TV_EXTERN },
@@ -258,21 +268,33 @@ void AsmParser::addFixup(const std::string &str, uint16_t addr)
 void AsmParser::dataByte(SymbolEntry *sym)
 {
 	SymbolEntity se;
-	se.type = SET_DATA;
 
 	match();
 
-	if (lookahead == TV_INTVAL)
+	// handle uninitilized data decl
+	if (lookahead == '?')
 	{
-		se.value = obj.addData(yylval.ival);
 		match();
+
+		se.type		= SET_BSS;
+		se.value	= obj.allocBSS(1);
 	}
 	else
 	{
-		se.value = obj.addData(yylval.char_val);
-		match();
+		se.type = SET_DATA;
+		if (lookahead == TV_INTVAL)
+		{
+			se.value = obj.addData(yylval.ival);
+			match();
+		}
+		else
+		{
+			se.value = obj.addData(yylval.char_val);
+			match();
+		}
 	}
 
+	// add to the symbol table
 	if (sym)
 	{
 		sym->type = stDataByte;
@@ -285,16 +307,27 @@ void AsmParser::dataByte(SymbolEntry *sym)
 void AsmParser::dataWord(SymbolEntry *sym)
 {
 	SymbolEntity se;
-	se.type = SET_DATA;
 
 	match();
 
-	auto val = yylval.ival;
+	if (lookahead == '?')
+	{
+		match();
 
-	se.value = obj.addData(LOBYTE(val));
-	obj.addData(HIBYTE(val));
+		se.type = SET_BSS;
+		se.value = obj.allocBSS(2);
+	}
+	else
+	{
+		se.type = SET_DATA;
 
-	match();
+		auto val = yylval.ival;
+
+		se.value = obj.addData(LOBYTE(val));
+		obj.addData(HIBYTE(val));
+
+		match();
+	}
 
 	if (sym)
 	{
@@ -321,7 +354,7 @@ void AsmParser::dataString(SymbolEntry *sym)
 	for (size_t i = 0; i < yylval.sym->lexeme.size(); i++)
 		obj.addData(yylval.sym->lexeme[i]);
 
-	// make sure it is null terminated
+	// make sure it is null terminated in the data segment
 	obj.addData(0);
 
 	if (sym)
@@ -790,6 +823,11 @@ void AsmParser::file()
 
 		case TV_ADD:
 			memOperand(OP_ADDI, OP_ADD);
+			break;
+
+		case TV_AAX:
+			obj.addText(OP_AAX);
+			match();
 			break;
 
 		case TV_SUB:

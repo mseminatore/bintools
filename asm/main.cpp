@@ -72,17 +72,28 @@ enum
 	// pre-processor
 	TV_NOP = TV_USER,
 	TV_ADD,
+	TV_ADC,
 	TV_SUB,
 	TV_AAX,
+	TV_AAY,
 
 	TV_LDA,
 	TV_LDX,
+	TV_LDY,
+
 	TV_STA,
 	TV_STX,
+	TV_STY,
 	TV_STAX,
+	TV_STAY,
+
 	TV_LAX,
 	TV_LEAX,
 	TV_LXX,
+
+	TV_LAY,
+	TV_LEAY,
+	TV_LYY,
 
 	TV_A,
 	TV_X,
@@ -134,8 +145,10 @@ TokenTable _tokenTable[] =
 {
 	{ "NOP",	TV_NOP },
 	{ "ADD",	TV_ADD },
+	{ "ADC",	TV_ADC },
 	{ "SUB",	TV_SUB },
 	{ "AAX",	TV_AAX },
+	{ "AAY",	TV_AAY },
 
 	{ "AND",	TV_AND },
 	{ "OR",		TV_OR },
@@ -161,11 +174,17 @@ TokenTable _tokenTable[] =
 	{ "LDA",	TV_LDA },
 	{ "STA",	TV_STA },
 	{ "STX",	TV_STX },
+	{ "STY",	TV_STY },
 	{ "STAX",	TV_STAX },
+	{ "STAY",	TV_STAY },
 	{ "LDX",	TV_LDX },
+	{ "LDY",	TV_LDY },
 	{ "LAX",	TV_LAX },
+	{ "LAY",	TV_LAY },
 	{ "LEAX",	TV_LEAX },
+	{ "LEAY",	TV_LEAY },
 	{ "LXX",	TV_LXX },
+	{ "LYY",	TV_LYY },
 
 	{ "A",		TV_A },
 	{ "X",		TV_X },
@@ -283,7 +302,7 @@ void AsmParser::dataByte(SymbolEntry *sym)
 		match();
 
 		se.type		= SET_BSS;
-		se.value	= obj.allocBSS(1);
+		se.value	= obj.allocBSS(BYTE_SIZE);
 	}
 	else
 	{
@@ -300,7 +319,7 @@ void AsmParser::dataByte(SymbolEntry *sym)
 		}
 	}
 
-	// add to the symbol table
+	// if the data byte was named, add to the symtable
 	if (sym)
 	{
 		sym->type = stDataByte;
@@ -321,7 +340,7 @@ void AsmParser::dataWord(SymbolEntry *sym)
 		match();
 
 		se.type = SET_BSS;
-		se.value = obj.allocBSS(2);
+		se.value = obj.allocBSS(WORD_SIZE);
 	}
 	else
 	{
@@ -335,6 +354,7 @@ void AsmParser::dataWord(SymbolEntry *sym)
 		match();
 	}
 
+	// if the data word was named, add to the symtable
 	if (sym)
 	{
 		sym->type = stDataWord;
@@ -453,6 +473,11 @@ uint8_t AsmParser::reg()
 		match();
 		break;
 
+	case TV_Y:
+		reg = REG_Y;
+		match();
+		break;
+
 	case TV_SP:
 		reg = REG_SP;
 		match();
@@ -500,9 +525,7 @@ void AsmParser::addTextRelocation(uint32_t addr, uint32_t length, uint32_t index
 	obj.addTextRelocation(re);
 }
 
-//
-//
-//
+// We are expecting an 8-bit immediate value or named immediate value
 void AsmParser::imm8(int op)
 {
 	obj.addText(op);
@@ -535,7 +558,7 @@ void AsmParser::imm8(int op)
 	match();
 }
 
-// We are expecting a 16b immediate value or a named immediate value
+// We are expecting a 16-bit immediate value or a named immediate value
 void AsmParser::imm16(int op)
 {
 	bool bSegmentRelative = false;
@@ -831,8 +854,17 @@ void AsmParser::file()
 			memOperand(OP_ADDI, OP_ADD);
 			break;
 
+		case TV_ADC:
+			memOperand(OP_ADCI, OP_ADC);
+			break;
+
 		case TV_AAX:
 			obj.addText(OP_AAX);
+			match();
+			break;
+
+		case TV_AAY:
+			obj.addText(OP_AAY);
 			match();
 			break;
 
@@ -865,8 +897,17 @@ void AsmParser::file()
 			memOperand(OP_LDXI, OP_LDX, true);
 			break;
 
+		case TV_LDY:
+			memOperand(OP_LDYI, OP_LDY, true);
+			break;
+
 		case TV_LXX:
 			obj.addText(OP_LXX);
+			match();
+			break;
+
+		case TV_LYY:
+			obj.addText(OP_LYY);
 			match();
 			break;
 
@@ -875,9 +916,19 @@ void AsmParser::file()
 			match();
 			break;
 
+		case TV_LAY:
+			obj.addText(OP_LAY);
+			match();
+			break;
+
 		case TV_LEAX:
 			match();
 			imm8(OP_LEAX);
+			break;
+
+		case TV_LEAY:
+			match();
+			imm8(OP_LEAY);
 			break;
 
 		// stores
@@ -889,8 +940,17 @@ void AsmParser::file()
 			dataAddress(OP_STX);
 			break;
 
+		case TV_STY:
+			dataAddress(OP_STY);
+			break;
+
 		case TV_STAX:
 			obj.addText(OP_STAX);
+			match();
+			break;
+
+		case TV_STAY:
+			obj.addText(OP_STAY);
 			match();
 			break;
 

@@ -416,13 +416,47 @@ void Cisc::exec()
 
 		A = temp16 & 0xFF;
 
-		log("ADD %d", operand);
+		log("ADD 0x%X (%d)", operand, operand);
+		break;
+
+	case OP_ADC:
+		addr = fetchW();
+		temp16 = A + ram[addr] + (TSTF(FLAG_C) ? 1 : 0);
+
+		updateFlag(temp16 & 0xFF00, FLAG_C);
+		updateFlag(temp16 == 0, FLAG_Z);
+		updateFlag(temp16 & 0x80, FLAG_N);
+		updateFlag(checkOverflow(temp16), FLAG_V);
+
+		A = temp16 & 0xFF;
+
+		log("ADC [0x%X]", addr);
+		break;
+
+	case OP_ADCI:
+		operand = fetch();
+		temp16 = A + operand + (TSTF(FLAG_C) ? 1 : 0);
+
+		updateFlag(temp16 & 0xFF00, FLAG_C);
+		updateFlag(temp16 == 0, FLAG_Z);
+		updateFlag(temp16 & 0x80, FLAG_N);
+		updateFlag(checkOverflow(temp16), FLAG_V);
+
+		A = temp16 & 0xFF;
+
+		log("ADC 0x%X (%d)", operand, operand);
 		break;
 
 	case OP_AAX:
 		X = X + A;
 
 		log("AAX");
+		break;
+
+	case OP_AAY:
+		Y = Y + A;
+
+		log("AAY");
 		break;
 
 	case OP_SUB:
@@ -539,9 +573,6 @@ void Cisc::exec()
 
 	case OP_RTI:
 		popAll();
-		
-		// TODO/BUG - should this happen here?
-		CLRF(FLAG_I);
 
 		log("RTI");
 		break;
@@ -596,6 +627,16 @@ void Cisc::exec()
 		log("LAX");
 		break;
 
+	case OP_LAY:
+		A = ram[Y];
+
+		updateFlag(A == 0, FLAG_Z);
+		updateFlag(A & 0x80, FLAG_N);
+		updateFlag(0, FLAG_V);
+
+		log("LAY");
+		break;
+
 	case OP_LDA:
 		addr = fetchW();
 		A = ram[addr];
@@ -639,6 +680,27 @@ void Cisc::exec()
 		log("LDX %d", X);
 		break;
 
+	case OP_LDY:
+		addr = fetchW();
+		Y = ram[addr] + (ram[addr + 1] << 8);
+
+		updateFlag(Y == 0, FLAG_Z);
+		updateFlag(Y & 0x8000, FLAG_N);
+		updateFlag(0, FLAG_V);
+
+		log("LDY [0x%X]", addr);
+		break;
+
+	case OP_LDYI:
+		Y = fetchW();
+
+		updateFlag(Y == 0, FLAG_Z);
+		updateFlag(Y & 0x8000, FLAG_N);
+		updateFlag(0, FLAG_V);
+
+		log("LDY %d", Y);
+		break;
+
 	case OP_LEAX:
 		operand = fetch();
 		X = (int)X + (char)operand;
@@ -650,6 +712,17 @@ void Cisc::exec()
 		log("LEAX %d", (char)operand);
 		break;
 
+	case OP_LEAY:
+		operand = fetch();
+		Y = (int)Y + (char)operand;
+
+		updateFlag(Y == 0, FLAG_Z);
+		updateFlag(Y & 0x8000, FLAG_N);
+		updateFlag(0, FLAG_V);
+
+		log("LEAY %d", (char)operand);
+		break;
+
 	case OP_LXX:
 		X = ram[X] + (ram[X + 1] << 8);
 
@@ -658,6 +731,16 @@ void Cisc::exec()
 		updateFlag(0, FLAG_V);
 
 		log("LXX");
+		break;
+
+	case OP_LYY:
+		Y = ram[Y] + (ram[Y + 1] << 8);
+
+		updateFlag(Y == 0, FLAG_Z);
+		updateFlag(Y & 0x8000, FLAG_N);
+		updateFlag(0, FLAG_V);
+
+		log("LYY");
 		break;
 
 	case OP_STA:
@@ -679,10 +762,26 @@ void Cisc::exec()
 		log("STX %s (0x%X)", name.c_str(), addr);
 		break;
 
+	case OP_STY:
+		addr = fetchW();
+		ram[addr] = LOBYTE(Y);
+		ram[addr + 1] = HIBYTE(Y);
+
+		obj.findSymbolByAddr(addr, name);
+
+		log("STY %s (0x%X)", name.c_str(), addr);
+		break;
+
 	case OP_STAX:
 		ram[X] = A;
 
 		log("STAX");
+		break;
+
+	case OP_STAY:
+		ram[Y] = A;
+
+		log("STAY");
 		break;
 
 	case OP_PUSH:

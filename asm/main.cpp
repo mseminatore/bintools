@@ -129,6 +129,9 @@ enum
 	TV_PUSH,
 	TV_POP,
 
+	TV_OUT,
+	TV_IN,
+
 	TV_BRK,
 	TV_SWI,
 
@@ -198,6 +201,9 @@ TokenTable _tokenTable[] =
 
 	{ "BRK",	TV_BRK},
 	{ "SWI",	TV_SWI},
+
+	{ "OUT",	TV_OUT },
+	{ "IN",		TV_IN },
 
 	{ "PUBLIC",	TV_PUBLIC },
 	{ "EXTERN",	TV_EXTERN },
@@ -881,7 +887,8 @@ void AsmParser::file()
 			break;
 
 		case TV_NOT:
-			memOperand(OP_NOTI, OP_NOT);
+			obj.addText(OP_NOT);
+			match();
 			break;
 
 		case TV_XOR:
@@ -1002,6 +1009,16 @@ void AsmParser::file()
 		case TV_RTI:
 			obj.addText(OP_RTI);
 			match();
+			break;
+
+		case TV_OUT:
+			match();
+			imm8(OP_OUT);
+			break;
+
+		case TV_IN:
+			match();
+			imm8(OP_IN);
 			break;
 
 		case TV_SWI:

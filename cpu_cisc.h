@@ -42,7 +42,6 @@ enum
 	OP_OR, 
 	OP_ORI,
 	OP_NOT, 
-	OP_NOTI,
 	OP_XOR, 
 	OP_XORI,
 	//OP_ROL, OP_ROR,
@@ -85,7 +84,12 @@ enum
 	// stack
 	OP_PUSH,	// push one or more registers on the stack
 	OP_POP,		// pop one or more registers from the stack
-	
+
+	// IO
+	OP_OUT,		// output a byte to a port
+	OP_IN,		// input a byte from a port
+
+	// software interrupts
 	OP_BRK,		// breakpoint interrupt
 	OP_SWI,		// software interrupt
 };

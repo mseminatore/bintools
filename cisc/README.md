@@ -88,29 +88,38 @@ containing operands.
 Instruction | Description | Flags
 ----------- | ----------- | -----
 ADD | add memory/immediate byte into A | CZNV
+ADC | add memory/immediate byte into A with carry | | CVNV
 AND | logical AND of A and memory/immediate | ZNV
-BRK | (not yet implemented) | I
+BRK | breakpoint interrupt | I
 CALL | branch to a subroutine | (none)
+IN | input a byte to A from an IO port | (none)
 LAX | load A using X as a pointer | ZNV
+LAY | load A using Y as a pointer | ZNV
 LDA | load A from memory/immediate | ZNV
 LDX | load X from memory/immediate | ZNV
+LDY | load X from memory/immediate | ZNV
 LXX | load X from addres pointed to by X | ZNV
+LYY | load Y from addres pointed to by Y | ZNV
 JEQ | jump on equal | (none)
 JGT | jump if greater than | (none)
 JLT | jump if less than | (none)
 JMP | unconditional jump | (none)
 JNE | jump if not equal | (none)
 NOP | no or null operation | (none)
-NOT | (not yet implemented)
+NOT | (not yet implemented) |
 OR | logical OR of A and memory/immediate | ZNV
+OUT | output byte in A to an IO port | (none)
 POP | pop one or more registers from the stack | (none)
 PUSH | push one or more registers onto the stack | (none)
 RET | return from subroutine | (none)
 RTI | return from interrupt | (none)
 STA | store A to memory | (none)
+STAX | store A using X as a pointer | (none)
+STAY | store A using Y as a pointer | (none)
 STX | store X to memory | (none)
+STY | store Y to memory | (none)
 SUB | subtract memory/immediate from A | CZNV
-SWI | (not yet implemented) | I
+SWI | software interrupt | I
 XOR | logical XOR of A and memory/immediate | ZNV
 
 ## Interrupts

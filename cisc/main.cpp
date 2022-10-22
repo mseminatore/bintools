@@ -74,7 +74,10 @@ public:
 		maxStack = 0xFFFF;
 		timer = 0;
 	}
+
 	uint32_t Cisc::checkOverflow(uint16_t val);
+	void inputByte();
+	void outputByte();
 
 	uint16_t getMaxStack() { return RAM_END - maxStack; }
 	void push(uint8_t val);
@@ -270,6 +273,9 @@ void Cisc::getRegisterList(uint8_t operand, std::string &str)
 //
 void Cisc::log(const char *fmt, ...)
 {
+	if (!singleStep)
+		return;
+
 	char buf[SMALL_BUFFER];
 	va_list argptr;
 
@@ -375,6 +381,44 @@ uint32_t Cisc::checkOverflow(uint16_t val)
 		return 1;
 
 	return 0;
+}
+
+// Handle IO input
+void Cisc::inputByte()
+{
+	auto port = fetch();
+
+	switch (port)
+	{
+	case 1:
+		A = getchar();
+		break;
+
+	default:
+		// do nothing!
+		break;
+	}
+
+	log("IN %d", port);
+}
+
+// Handle IO output
+void Cisc::outputByte()
+{
+	auto port = fetch();
+
+	switch (port)
+	{
+	case 1:
+		putchar(A);
+		break;
+
+	default:
+		// do nothing!
+		break;
+	}
+
+	log("OUT %d", port);
 }
 
 //
@@ -551,6 +595,18 @@ void Cisc::exec()
 		updateFlag(0, FLAG_V);
 
 		log("XOR %d", operand);
+		break;
+
+	case OP_NOT:
+		operand = fetch();
+		A = ~A;
+
+		updateFlag(A == 0, FLAG_Z);
+		updateFlag(A & 0x80, FLAG_N);
+		updateFlag(0, FLAG_V);
+		updateFlag(1, FLAG_C);
+
+		log("NOT");
 		break;
 
 	case OP_CALL:
@@ -790,6 +846,14 @@ void Cisc::exec()
 
 	case OP_POP:
 		popRegs();
+		break;
+
+	case OP_OUT:
+		outputByte();
+		break;
+
+	case OP_IN:
+		inputByte();
 		break;
 
 	case OP_SWI:

@@ -35,6 +35,8 @@ enum
 
 	OP_SUB,		// A = A - memory
 	OP_SUBI,	// A = A - immediate
+	OP_SBB,		// A = A - memory - C
+	OP_SBBI,	// A = A - immediate - C
 
 	// logical
 	OP_AND, 

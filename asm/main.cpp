@@ -74,6 +74,7 @@ enum
 	TV_ADD,
 	TV_ADC,
 	TV_SUB,
+	TV_SBB,
 	TV_AAX,
 	TV_AAY,
 
@@ -150,6 +151,7 @@ TokenTable _tokenTable[] =
 	{ "ADD",	TV_ADD },
 	{ "ADC",	TV_ADC },
 	{ "SUB",	TV_SUB },
+	{ "SBB",	TV_SBB },
 	{ "AAX",	TV_AAX },
 	{ "AAY",	TV_AAY },
 
@@ -876,6 +878,10 @@ void AsmParser::file()
 
 		case TV_SUB:
 			memOperand(OP_SUBI, OP_SUB);
+			break;
+
+		case TV_SBB:
+			memOperand(OP_SBBI, OP_SBB);
 			break;
 
 		case TV_AND:

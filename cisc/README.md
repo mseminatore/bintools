@@ -6,16 +6,18 @@ The bintools CPU emulator and debug monitor.
 
 Originally I had intended to define a simple 8-bit RISC processor. However,
 programming a RISC processor in assembly is not always enjoyable. RISC 
-processors are generally designed assuming that a high-level language compiler 
+processors are generally designed assuming that a high-level language compiler
 is involved.
 
-So I chose to design a simple 8-bit CISC processor and emulator. This design 
-was inspired by classic microprocessors like the `6502`, `6800` and `6809`.
+So instead I chose to design a simple 8-bit CISC processor and emulator. This 
+design was inspired by classic microprocessors like the `6502`, `6800` and 
+the `6809`. Like those processors the addressable memory space is 64KB.
 
-The CPU has a Harvard, or split memory, architecture. Which means that there 
-are separate address spaces for instruction code `I` and data `D`. The `I` is
-read-only memory and the `D` is read-write memory. You can think of this as 
-representing ROM and RAM.
+However, like many microcontrollers, this CPU has a 
+[Harvard architecture](https://en.wikipedia.org/wiki/Harvard_architecture). 
+Which means that there are separate 64KB address spaces for instruction code 
+`I` and data `D`. The `I` space is read-only memory and the `D` is read-write 
+memory. You can think of these two memory spaces as representing ROM and RAM.
 
 ## Registers
 
@@ -32,9 +34,10 @@ SP | Stack Pointer | 16-bit
 PC | Program counter | 16-bit
 
 The `A` register is the arithmetic accumulator. Most operations involve the 
-use of the accumulator.
+use of the accumulator. Like the `6502` and unlike the `6800` and `6809` there
+is only a single accumulator register.
 
-The `X` and 'Y' registers are index registers. They are usually used as an 
+The `X` and `Y` registers are index registers. They are usually used as an 
 index of, or pointer to, memory locations.
 
 The `CC` register holds the condition codes or flags. Individual instructions
@@ -54,11 +57,11 @@ The various condition codes are described below.
 
 Flag | Description
 ---- | -----------
-C | Carry flag
-Z | Zero flag
-V | Overflow flag
-N | Negative flag
-I | Interrupt flag
+C | Carry flag - last arithmetic operation caused a carry/borrow
+Z | Zero flag - last operation produced a zero result
+V | Overflow flag - last arithmetic operation caused a signed overflow
+N | Negative flag - last operation produced a negative number
+I | Interrupt flag - interrupts are disabled
 
 ## Instruction Design
 
@@ -82,13 +85,15 @@ jump if less than `JLT`. And Likewise with `JLE` and `JGT`.
 
 ## Instruction Set
 
-Instruction opcodes are all 8-bits in length and include zero or more bytes 
-containing operands.
+Instruction opcodes are all 8-bits in length. Each opcode is followed by zero 
+or more bytes containing operands.
 
 Instruction | Description | Flags
 ----------- | ----------- | -----
+AAX | add A to X | CZNV
+AAY | add A to Y | CZNV
 ADD | add memory/immediate byte into A | CZNV
-ADC | add memory/immediate byte into A with carry | | CVNV
+ADC | add memory/immediate byte into A with carry | | CZNV
 AND | logical AND of A and memory/immediate | ZNV
 BRK | breakpoint interrupt | I
 CALL | branch to a subroutine | (none)
@@ -113,6 +118,7 @@ POP | pop one or more registers from the stack | (none)
 PUSH | push one or more registers onto the stack | (none)
 RET | return from subroutine | (none)
 RTI | return from interrupt | (none)
+SBB | subtract with borrow | CZNV
 STA | store A to memory | (none)
 STAX | store A using X as a pointer | (none)
 STAY | store A using Y as a pointer | (none)

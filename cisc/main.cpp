@@ -519,7 +519,7 @@ void Cisc::exec()
 
 	case OP_SUBI:
 		operand = fetch();
-		temp16 = A - /*(signed char)*/ operand;
+		temp16 = A - operand;
 
 		updateFlag(temp16 & 0xFF00, FLAG_C);
 		updateFlag(temp16 == 0, FLAG_Z);
@@ -529,6 +529,34 @@ void Cisc::exec()
 		A = temp16 & 0xFF;
 
 		log("SUB %d", operand);
+		break;
+
+	case OP_SBB:
+		addr = fetchW();
+		temp16 = A - ram[addr] - (TSTF(FLAG_C) ? 1 : 0);
+
+		updateFlag(temp16 & 0xFF00, FLAG_C);
+		updateFlag(temp16 == 0, FLAG_Z);
+		updateFlag(temp16 & 0x80, FLAG_N);
+		updateFlag(checkOverflow(temp16), FLAG_V);
+
+		A = temp16 & 0xFF;
+
+		log("SBB [0x%X]", addr);
+		break;
+
+	case OP_SBBI:
+		operand = fetch();
+		temp16 = A - operand - (TSTF(FLAG_C) ? 1 : 0);
+
+		updateFlag(temp16 & 0xFF00, FLAG_C);
+		updateFlag(temp16 == 0, FLAG_Z);
+		updateFlag(temp16 & 0x80, FLAG_N);
+		updateFlag(checkOverflow(temp16), FLAG_V);
+
+		A = temp16 & 0xFF;
+
+		log("SBB 0x%X", operand);
 		break;
 
 	case OP_AND:

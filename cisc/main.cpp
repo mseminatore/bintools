@@ -973,14 +973,15 @@ void Cisc::popAll()
 void Cisc::interrupt(uint32_t vector)
 {
 	// no re-entrant interrupts by default
-	if (TSTF(FLAG_I))
+	if (vector == INT_VECTOR && TSTF(FLAG_I))
 		return;
 
 	// save the current context
 	pushAll();
 
 	// set interrupt flag
-	SETF(FLAG_I);
+	if (vector == INT_VECTOR)
+		SETF(FLAG_I);
 
 	// jump to the interrupt vector
 	PC = ram[vector] + (ram[vector + 1] << 8);

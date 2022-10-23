@@ -9,7 +9,7 @@
 // Command line switches
 //
 bool g_bDebug = false;
-char *g_szOutputFilename = "a.out";
+const char *g_szOutputFilename = "a.out";
 
 enum
 {
@@ -510,7 +510,7 @@ uint8_t AsmParser::regSet()
 {
 	uint8_t val, regs = 0;
 
-	while (val = reg())
+	while ((val = reg()))
 	{
 		regs |= val;
 		if (lookahead == ',')
@@ -591,7 +591,7 @@ void AsmParser::imm16(int op)
 
 		// handle undefined symbols
 		if (yylval.sym->type == stUndef)
-			yyerror("undefined symbol '%s'", yylval.sym->lexeme);
+			yyerror("undefined symbol '%s'", yylval.sym->lexeme.c_str());
 	}
 	else
 	{

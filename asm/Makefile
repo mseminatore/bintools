@@ -1,7 +1,7 @@
 # Copyright 2022 Mark Seminatore. All rights reserved.
 
 TARGET	= asm
-LINKER	= cc -o
+LINKER	= ccp -o
 
 DEPS 	= \
 	../aout.h  \
@@ -15,13 +15,13 @@ OBJS	= \
 	ParserKit/sumboltable.o
 
 CFLAGS	= -I. -I.. -g -std=c++14
-LIBS = -lm
+LIBS = -lm -lc++
 
-%.o: %.c $(DEPS)
-	$(CC) -c -o $@ $(CFLAGS) $<
+%.o: %.cpp $(DEPS)
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(TARGET):	$(OBJS)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 clean:
 	rm -f $(OBJS) $(TARGET)

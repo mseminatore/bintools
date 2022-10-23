@@ -131,4 +131,4 @@ enum
 	INT_TIMER = 1
 };
 
-#endif __CPU_CISC_H
+#endif // __CPU_CISC_H

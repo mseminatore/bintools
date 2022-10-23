@@ -14,7 +14,7 @@ enum {
 // Command line switches
 //
 uint16_t g_bBaseAddr = 0;
-char *g_szOutputFilename = "a.out";
+const char *g_szOutputFilename = "a.out";
 bool g_bDebug = false;
 
 //
@@ -22,10 +22,10 @@ bool g_bDebug = false;
 //
 void usage()
 {
-	puts("usage: ln [options] filename\n");
+	puts("\nusage: ln [options] filename\n");
 	puts("-b 0000\tset base address");
 	puts("-o file\tset output filename");
-	puts("-v\tverbose output");
+	puts("-v\tverbose output\n");
 
 	exit(0);
 }

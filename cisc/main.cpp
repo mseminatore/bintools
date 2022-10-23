@@ -75,7 +75,7 @@ public:
 		timer = 0;
 	}
 
-	uint32_t Cisc::checkOverflow(uint16_t val);
+	uint32_t checkOverflow(uint16_t val);
 	void inputByte();
 	void outputByte();
 
@@ -1001,7 +1001,7 @@ void Cisc::panic()
 // show usage
 void usage()
 {
-	puts("usage: cisc [options] filename\n");
+	puts("\nusage: cisc [options] filename\n\n");
 	exit(0);
 }
 
@@ -1077,7 +1077,10 @@ int main(int argc, char* argv[])
 	cpu.load(argv[iFirstArg]);
 
 	signal(SIGINT, sigint);
+
+#ifdef _WIN32
 	signal(SIGBREAK, sigbreak);
+#endif
 
 	while (!done)
 	{

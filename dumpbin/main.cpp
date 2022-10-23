@@ -1,7 +1,7 @@
 #include "../aout.h"
 #include <stdio.h>
 
-//
+// global flags for command line switches
 bool g_bDumpText = false;
 bool g_bDumpData = false;
 bool g_bDumpTextRelocs = false;
@@ -11,16 +11,16 @@ bool g_bDumpSymbols = false;
 bool g_bDumpStrings = false;
 
 //
-// show usage
+// show usage banner
 //
 void usage()
 {
-	puts("usage: dumpbin [options] filename\n");
+	puts("\nusage: dumpbin [options] filename\n");
 	puts("-t\tdump text segment");
 	puts("-d\tdump data segment");
 	puts("-r\tdump relocations");
 	puts("-s\tdump symbols");
-	puts("-a\tdump all");
+	puts("-a\tdump all\n");
 	exit(0);
 }
 
@@ -101,7 +101,7 @@ void testGen()
 	}
 
 	FILE *f = nullptr;
-	fopen_s(&f, "a.out", "wb");
+	f = fopen("a.out", "wb");
 		a.writeFile(f);
 	fclose(f);
 }
@@ -109,7 +109,7 @@ void testGen()
 //
 //
 //
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	if (argc == 1)
 	{
@@ -161,4 +161,6 @@ void main(int argc, char *argv[])
 
 	if (g_bDumpSymbols)
 		a.dumpSymbols(stdout);
+
+	return 0;
 }

@@ -15,6 +15,7 @@
 #	define HIBYTE(val) (((val) & 0xFF00) >> 8)
 #endif
 
+#include <string>
 #include <vector>
 #include <map>
 
@@ -185,5 +186,5 @@ void hexDumpGroup(FILE *f, uint8_t *buf);
 void hexDumpLine(FILE *f, uint32_t offset, uint8_t *buf);
 void hexDumpSegment(FILE *f, uint8_t *seg, size_t size);
 
-#endif __AOUT_H
+#endif // __AOUT_H
 

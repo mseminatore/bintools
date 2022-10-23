@@ -1,7 +1,7 @@
 # Copyright 2022 Mark Seminatore. All rights reserved.
 
 TARGET	= asm
-LINKER	= ccp -o
+LINKER	= cpp -o
 
 DEPS 	= \
 	../aout.h  \

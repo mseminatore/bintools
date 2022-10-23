@@ -26,7 +26,7 @@ documented. Once the basic linking process was understood it would always be
 an option to re-implement the linker using a more modern object file format 
 like `ELF` or `PE`.
 
-> If you want to learn about linkers and object file format, I highly recommend
+> If you want to learn more about linkers and object file formats, I highly recommend
 > the book '**Linkers & Loaders**' by John R. Levine
 
 In order to test the linker it was necessary to have a way to generate linkable

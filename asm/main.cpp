@@ -19,7 +19,8 @@ enum
 	stExternal,
 	stDataByte,
 	stDataWord,
-	stDataString
+	stDataString,
+	stDataMemory
 };
 
 //
@@ -38,6 +39,7 @@ protected:
 	void dataByte(SymbolEntry * sym);
 	void dataWord(SymbolEntry * sym);
 	void dataString(SymbolEntry * sym);
+	void dataMemory(SymbolEntry *sym);
 
 public:
 	AsmParser();
@@ -103,9 +105,10 @@ enum
 	TV_SP,
 	TV_PC,
 	
-	TV_DB,
-	TV_DW,
-	TV_DS,
+	TV_DB,		// reserve data byte
+	TV_DW,		// reserve data word
+	TV_DS,		// reserve data string
+	TV_DM,		// reserve memory bytes
 
 	TV_EQU,
 	TV_ORG,
@@ -175,6 +178,7 @@ TokenTable _tokenTable[] =
 	{ "DB",		TV_DB},
 	{ "DW",		TV_DW},
 	{ "DS",		TV_DS },
+	{ "DM",		TV_DM },
 
 	{ "LDA",	TV_LDA },
 	{ "STA",	TV_STA },
@@ -294,6 +298,31 @@ void AsmParser::addFixup(const std::string &str, uint16_t addr)
 		AddressList list;
 		list.push_back(addr);
 		fixups.insert(Fixups::value_type(str, list));
+	}
+}
+
+//
+void AsmParser::dataMemory(SymbolEntry *sym)
+{
+	SymbolEntity se;
+
+	match();
+
+	if (lookahead != TV_INTVAL)
+		expected(TV_INTVAL);
+	else
+	{
+		se.type = SET_BSS;
+		se.value = obj.allocBSS(yylval.ival);
+		match();
+	}
+
+	// if the data byte was named, add to the symtable
+	if (sym)
+	{
+		sym->type = stDataMemory;
+		sym->ival = se.value;
+		obj.addSymbol(sym->lexeme, se);
 	}
 }
 
@@ -456,6 +485,10 @@ void AsmParser::label()
 
 	case TV_DS:
 		dataString(sym);
+		break;
+	
+	case TV_DM:
+		dataMemory(sym);
 		break;
 
 	default:
@@ -628,7 +661,7 @@ void AsmParser::imm16(int op)
 //
 bool AsmParser::isDataLabel(int type)
 {
-	if (type == stDataByte || type == stDataWord || type == stDataString)
+	if (type == stDataByte || type == stDataWord || type == stDataString || type == stDataMemory)
 		return true;
 	return false;
 }
@@ -852,6 +885,11 @@ void AsmParser::file()
 
 		case TV_DW:
 			dataWord(sym);
+			break;
+
+		case TV_DM:
+			dataMemory(sym);
+			break;
 
 		case TV_NOP:
 			obj.addText(OP_NOP);

@@ -85,7 +85,7 @@ void ObjectFile::concat(ObjectFile *rhs)
 	text_segment.insert(text_segment.end(), rhs->text_segment.begin(), rhs->text_segment.end());
 	data_segment.insert(data_segment.end(), rhs->data_segment.begin(), rhs->data_segment.end());
 
-	// Note: the bss is all zero so no merging required
+	// Note: the bss is all zero so no merging of contents is required
 
 	// merge the symbols
 	for (auto it = rhs->symbolTable.begin(); it != rhs->symbolTable.end(); it++)
@@ -107,7 +107,10 @@ void ObjectFile::concat(ObjectFile *rhs)
 			else if (sym->type & SET_DATA)
 				sym->value = it->second.value + rhs->getDataBase();
 			else
+			{
 				assert(false);
+				sym->value = it->second.value + rhs->getBssBase();
+			}
 		}
 		else
 		{

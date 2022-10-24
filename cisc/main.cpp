@@ -886,10 +886,14 @@ void Cisc::exec()
 
 	case OP_SWI:
 		interrupt(SWI_VECTOR);
+
+		log("SWI");
 		break;
 
 	case OP_BRK:
 		interrupt(BRK_VECTOR);
+
+		log("BRK");
 		break;
 
 	default:
@@ -979,8 +983,8 @@ void Cisc::interrupt(uint32_t vector)
 	// save the current context
 	pushAll();
 
-	// set interrupt flag
-	if (vector == INT_VECTOR)
+	// set interrupt flag to disable interrupts
+//	if (vector == INT_VECTOR)
 		SETF(FLAG_I);
 
 	// jump to the interrupt vector

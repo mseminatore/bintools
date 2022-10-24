@@ -224,9 +224,9 @@ TokenTable _tokenTable[] =
 //
 void usage()
 {
-	puts("usage: asm [options] filename\n");
+	puts("\nusage: asm [options] filename\n");
 	puts("-v\tverbose output");
-	puts("-o file\tset output filename");
+	puts("-o file\tset output filename\n");
 
 	exit(0);
 }

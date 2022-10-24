@@ -12,7 +12,7 @@ OBJS	= \
 	../aout.o \
 	ParserKit/baseparser.o \
 	ParserKit/lexer.o \
-	ParserKit/sumboltable.o
+	ParserKit/symboltable.o
 
 CFLAGS	= -I. -I.. -g -std=c++14
 LIBS = -lm -lc++

@@ -49,6 +49,12 @@ Debug/
 # OSX files
 .DS_store
 
+# output files
+asm
+ln
+dumpbin
+cisc
+
 # Bison/Flex files
 bison.hairy.txt
 bison.simple.txt

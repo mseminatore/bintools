@@ -46,6 +46,9 @@
 Debug/
 .vs/
 
+# OSX files
+.DS_store
+
 # Bison/Flex files
 bison.hairy.txt
 bison.simple.txt

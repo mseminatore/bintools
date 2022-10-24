@@ -80,6 +80,10 @@ enum
 	TV_AAX,
 	TV_AAY,
 
+	TV_CMP,
+	TV_CMPX,
+	TV_CMPY,
+
 	TV_LDA,
 	TV_LDX,
 	TV_LDY,
@@ -157,6 +161,10 @@ TokenTable _tokenTable[] =
 	{ "SBB",	TV_SBB },
 	{ "AAX",	TV_AAX },
 	{ "AAY",	TV_AAY },
+
+	{ "CMP",	TV_CMP },
+	{ "CMPX",	TV_CMPX },
+	{ "CMPY",	TV_CMPY },
 
 	{ "AND",	TV_AND },
 	{ "OR",		TV_OR },
@@ -920,6 +928,18 @@ void AsmParser::file()
 
 		case TV_SBB:
 			memOperand(OP_SBBI, OP_SBB);
+			break;
+
+		case TV_CMP:
+			memOperand(OP_CMPI, OP_CMP);
+			break;
+
+		case TV_CMPX:
+			memOperand(OP_CMPXI, OP_CMPX);
+			break;
+
+		case TV_CMPY:
+			memOperand(OP_CMPYI, OP_CMPY);
 			break;
 
 		case TV_AND:

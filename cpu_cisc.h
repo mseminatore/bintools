@@ -38,6 +38,15 @@ enum
 	OP_SBB,		// A = A - memory - C
 	OP_SBBI,	// A = A - immediate - C
 
+	OP_CMP,		// temp = A - memory
+	OP_CMPI,	// temp = A - immediate
+
+	OP_CMPX,	// temp = X - memory
+	OP_CMPXI,	// temp = X - immediate
+
+	OP_CMPY,	// temp = Y - memory
+	OP_CMPYI,	// temp = Y - immediate
+
 	// logical
 	OP_AND, 
 	OP_ANDI,

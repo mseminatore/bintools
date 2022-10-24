@@ -503,6 +503,34 @@ void Cisc::exec()
 		log("AAY");
 		break;
 
+
+	case OP_CMP:
+		addr = fetchW();
+		temp16 = A - ram[addr];
+
+		updateFlag(temp16 & 0xFF00, FLAG_C);
+		updateFlag(temp16 == 0, FLAG_Z);
+		updateFlag(temp16 & 0x80, FLAG_N);
+		updateFlag(checkOverflow(temp16), FLAG_V);
+
+		// discard results!
+
+		log("CMP [0x%X]", addr);
+		break;
+
+	case OP_CMPI:
+		operand = fetch();
+		temp16 = A - operand;
+
+		updateFlag(temp16 & 0xFF00, FLAG_C);
+		updateFlag(temp16 == 0, FLAG_Z);
+		updateFlag(temp16 & 0x80, FLAG_N);
+		updateFlag(checkOverflow(temp16), FLAG_V);
+
+		// discard results!
+
+		log("CMP %d\t'%c'\t0x%X", operand, operand, operand);
+		break;
 	case OP_SUB:
 		addr = fetchW();
 		temp16 = A - ram[addr];
@@ -640,8 +668,8 @@ void Cisc::exec()
 	case OP_CALL:
 		addr = fetchW();
 
-		push(LOBYTE(PC));
 		push(HIBYTE(PC));
+		push(LOBYTE(PC));
 
 		PC = addr;
 
@@ -651,7 +679,7 @@ void Cisc::exec()
 		break;
 	
 	case OP_RET:
-		PC = (pop() << 8) | pop();
+		PC = pop() | (pop() << 8);
 		log("RET");
 		break;
 

@@ -22,7 +22,8 @@ memory. You can think of these two memory spaces as representing ROM and RAM.
 ## Registers
 
 I wanted to keep the CPU as simple as possible. So there are a very small 
-number of registers. They are:
+number of registers. I am still debating the value of a frame pointer 
+register. The registers are:
 
 Register | Description | Size
 -------- | ----------- | ----
@@ -66,11 +67,13 @@ I | Interrupt flag - interrupts are disabled
 ## Instruction Design
 
 To keep things simple I tried to avoid including any extra instructions which 
-were not strictly necessary. For example, rather than include a compare 
-instruction `CMP` to compare a value to the accumulator `A` a typical 
-replacement is to `SUB` the value from `A` and branch based on the result. The
-tradeoff then is the need to frequently preserve `A` via a `PUSH` to the stack
-followed by a restore of `A` via a subsequent `POP`.
+were not strictly necessary. Initially, rather than include a compare 
+instruction `CMP` to compare a value to the accumulator `A` I had planned to
+recommend the use of `SUB` to compare to the value from `A` and branch based on
+the result. The tradeoff of course would be the need to frequently preserve `A`
+via a `PUSH` to the stack followed by a restore of `A` via a subsequent `POP`.
+Given how frequently comparisons are used, the extra code space and performance
+of added `PUSH` and `POP` instructions seemed unwise.
 
 Similarly, there are no special register transfer functions. All such moves can
 be accomplished by an apropriate `PUSH` and `POP` via the stack.
@@ -80,51 +83,63 @@ in terms of other conditional branches. For example, a jump if greater or equal
 to `JGE` is not needed as it can be implmented by the appropriate logic with a
 jump if less than `JLT`. And Likewise with `JLE` and `JGT`.
 
-> Hopefully it is clear that if a value is not less than a value, then it must 
-> therefore be greater than or equal to that value.
+> Hopefully it is clear that not less-than a value is logically equivalent to
+> greater-than-or-equal-to that value. And likewise with not greater-than and
+> less-than-or-equal-to.
 
 ## Instruction Set
 
 Instruction opcodes are all 8-bits in length. Each opcode is followed by zero 
-or more bytes containing operands.
+or more bytes containing operands. Below is a complete list of the instructions.
+
+Label | Description
+----- | -----------
+R | register
+Rset | one or more registers
+imm8 | 8-bit immediate value
+imm16 | 16-bit immediate value
+M | reference to memory (code or data as appropriate)
+M/imm8 | either a memory reference or an immediate byte
+M/imm16 | either a memory reference or an immediate word
+P | I/O port number
 
 Instruction | Description | Flags
 ----------- | ----------- | -----
 AAX | add A to X | CZNV
 AAY | add A to Y | CZNV
-ADD | add memory/immediate byte into A | CZNV
-ADC | add memory/immediate byte into A with carry | | CZNV
-AND | logical AND of A and memory/immediate | ZNV
+ADD M/imm8 | add memory/immediate byte into A | CZNV
+ADC M/imm8 | add memory/immediate byte into A with carry | | CZNV
+AND M/imm8 | logical AND of A and memory/immediate | ZNV
 BRK | breakpoint interrupt | I
-CALL | branch to a subroutine | (none)
-IN | input a byte to A from an IO port | (none)
+CALL M | branch to a subroutine | (none)
+IN P | input a byte to A from an IO port | (none)
 LAX | load A using X as a pointer | ZNV
 LAY | load A using Y as a pointer | ZNV
-LDA | load A from memory/immediate | ZNV
-LDX | load X from memory/immediate | ZNV
-LDY | load X from memory/immediate | ZNV
+LDA M/imm8 | load A from memory/immediate | ZNV
+LDX M/imm16 | load X from memory/immediate | ZNV
+LDY M/imm16 | load X from memory/immediate | ZNV
 LXX | load X from addres pointed to by X | ZNV
 LYY | load Y from addres pointed to by Y | ZNV
-JEQ | jump on equal | (none)
-JGT | jump if greater than | (none)
-JLT | jump if less than | (none)
-JMP | unconditional jump | (none)
-JNE | jump if not equal | (none)
+JEQ M | jump on equal | (none)
+JGT M | jump if greater than | (none)
+JLT M | jump if less than | (none)
+JMP M | unconditional jump | (none)
+JNE M | jump if not equal | (none)
 NOP | no or null operation | (none)
-NOT | (not yet implemented) |
-OR | logical OR of A and memory/immediate | ZNV
-OUT | output byte in A to an IO port | (none)
-POP | pop one or more registers from the stack | (none)
-PUSH | push one or more registers onto the stack | (none)
+NOT | logical complement of A |
+OR M/imm8 | logical OR of A and memory/immediate | ZNV
+OUT P | output byte in A to an IO port | (none)
+POP Rset | pop one or more registers from the stack | (none)
+PUSH Rset | push one or more registers onto the stack | (none)
 RET | return from subroutine | (none)
 RTI | return from interrupt | (none)
-SBB | subtract with borrow | CZNV
-STA | store A to memory | (none)
+SBB M/imm8 | subtract with borrow | CZNV
+STA M | store A to memory | (none)
 STAX | store A using X as a pointer | (none)
 STAY | store A using Y as a pointer | (none)
-STX | store X to memory | (none)
-STY | store Y to memory | (none)
-SUB | subtract memory/immediate from A | CZNV
+STX M | store X to memory | (none)
+STY M | store Y to memory | (none)
+SUB M/imm8 | subtract memory/immediate from A | CZNV
 SWI | software interrupt | I
 XOR | logical XOR of A and memory/immediate | ZNV
 

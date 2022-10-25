@@ -764,7 +764,7 @@ void AsmParser::dataAddress(int op)
 	}
 	else
 	{
-		yyerror("syntax error");
+		yyerror("Syntax error: expected 16b data address or label.");
 	}
 
 	auto addr = obj.addText(LOBYTE(val));
@@ -801,7 +801,7 @@ void AsmParser::codeAddress(int op)
 	}
 	else 
 	{
-		yyerror("syntax error");
+		yyerror("Syntax error: expected 16b code address or label.");
 	}
 
 	auto addr = obj.addText(LOBYTE(val));
@@ -856,7 +856,9 @@ void AsmParser::file()
 			match();
 
 			// mark the symbol as an external reference
+			// external references don't generate unreferenced warnings
 			yylval.sym->type = stExternal;
+			yylval.sym->isReferenced = true;
 
 			se.type = SET_EXTERN | SET_UNDEFINED;
 			se.value = 0;
@@ -868,9 +870,9 @@ void AsmParser::file()
 		case TV_PROC:
 			match();
 
-			yylval.sym->type = stProc;
-			yylval.sym->global = true;
-			yylval.sym->isReferenced = true;
+			yylval.sym->type			= stProc;
+			yylval.sym->global			= true;
+			yylval.sym->isReferenced	= true;	// OK if procedures aren't referenced
 
 			se.type = SET_TEXT;
 			se.value = obj.getTextSize();
@@ -1145,9 +1147,13 @@ int main(int argc, char* argv[])
 		parser.yydebug = g_bDebug;
 
 		parser.parseFile(argv[iFirstArg]);
+
+		parser.addWarningCount(parser.reportUnreferencedSymbols());
+
+		printf("Warnings generated: %d\n", parser.getWarningCount());
+		printf("Assembly complete %s -> %s\n", argv[iFirstArg], g_szOutputFilename);
 	}
 
-	printf("Assembly complete -> %s\n", g_szOutputFilename);
 
 	return 0;
 }

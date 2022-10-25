@@ -71,7 +71,7 @@ public:
 		PC = ram[RESET_VECTOR];
 		SP = RAM_END;
 
-		maxStack = 0xFFFF;
+		maxStack = SP;
 		timer = 0;
 	}
 
@@ -239,7 +239,10 @@ void Cisc::push(uint8_t val)
 		maxStack = SP;
 
 	if (SP < __brk)
+	{
+		puts("Stack overflow!\n");
 		panic();
+	}
 
 	ram[SP] = val;
 }
@@ -969,18 +972,18 @@ void Cisc::decode()
 // push all registers onto the stack
 void Cisc::pushAll()
 {
-	push(LOBYTE(PC));
 	push(HIBYTE(PC));
+	push(LOBYTE(PC));
 
 	auto addr = SP;
-	push(LOBYTE(addr));
 	push(HIBYTE(addr));
+	push(LOBYTE(addr));
 
-	push(LOBYTE(X));
 	push(HIBYTE(X));
+	push(LOBYTE(X));
 
-	push(LOBYTE(Y));
 	push(HIBYTE(Y));
+	push(LOBYTE(Y));
 
 	push(A);
 
@@ -994,11 +997,16 @@ void Cisc::popAll()
 
 	A = pop();
 
-	Y = (pop() << 8) | pop();
-	X = (pop() << 8) | pop();
+	Y = pop() | (pop() << 8);
+	X = pop() | (pop() << 8);
+	SP = pop() | (pop() << 8);
+	PC = pop() | (pop() << 8);
 
-	SP = (pop() << 8) | pop();
-	PC = (pop() << 8) | pop();
+	//Y = (pop() << 8) | pop();
+	//X = (pop() << 8) | pop();
+
+	//SP = (pop() << 8) | pop();
+	//PC = (pop() << 8) | pop();
 }
 
 // process an interrupt request
@@ -1123,16 +1131,26 @@ int main(int argc, char* argv[])
 
 			char *pToken = strtok(buf, " \n");
 
-			if (!pToken || !strcmp(pToken, "s"))
+			if (!pToken || !strcmp(pToken, "s"))	// single step
 				cpu.tick();
-			else if (!strcmp(pToken, "r"))
+			else if (!strcmp(pToken, "r"))			// print registers
 				cpu.printRegisters();
-			else if (!strcmp(pToken, "q"))
+			else if (!strcmp(pToken, "q"))			// quit debugger
 				done = true;
-			else if (!strcmp(pToken, "g"))
+			else if (!strcmp(pToken, "g"))			// go, run program
 			{
 				singleStep = false;
 				cpu.tick();
+			}
+			else if (!strcmp(pToken, "n"))			// step over
+			{
+//				singleStep = false;
+//				cpu.tick();
+			}
+			else if (!strcmp(pToken, "fi"))			// finish current function
+			{
+//				singleStep = false;
+//				cpu.tick();
 			}
 			else if (!strcmp(pToken, "m"))
 			{
@@ -1227,7 +1245,7 @@ int main(int argc, char* argv[])
 		
 	}
 
-	printf("Max stack size: %d\n", cpu.getMaxStack());
+	printf("Max stack depth: %d\n", cpu.getMaxStack());
 
 	return 0;
 }

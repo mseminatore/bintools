@@ -6,11 +6,19 @@
 //
 // Memory map
 //
-#define RAM_END			0xFF00	// above this address is reserved for interrupt vectors
+
+// interrupt vectors
 #define RESET_VECTOR	0xFFFE	// addr of reset interrupt handler
 #define INT_VECTOR		0xFFFC	// addr of timer interrupt handler
 #define SWI_VECTOR		0xFFFA	// addr of software interrupt handler
 #define BRK_VECTOR		0xFFF8	// addr of breakpoint interrupt
+
+// MMIO
+#define MMIO_TIMER_REG	0xFF00	// current value of timer
+#define MMIO_TIMER_ENA	0xFF01	// timer enabled/disabled
+#define MMIO_TIMER_LIM	0xFF02	// timer limit
+
+#define RAM_END			0xFE00	// above this address is reserved (e.g. MMIO, interrupt vectors)
 
 //
 // Machine word sizes

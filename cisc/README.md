@@ -11,7 +11,7 @@ is involved.
 
 So instead I chose to design a simple 8-bit CISC processor and emulator. This 
 design was inspired by classic microprocessors like the `6502`, `6800` and 
-the `6809`. Like those processors the addressable memory space is 64KB.
+the `6809`. Similar to those processors, the addressable memory space is 64KB.
 
 However, like many microcontrollers, this CPU has a 
 [Harvard architecture](https://en.wikipedia.org/wiki/Harvard_architecture). 

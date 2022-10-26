@@ -49,6 +49,9 @@ Debug/
 # OSX files
 .DS_store
 
+# CMake output
+bin/
+
 # output files
 asm
 ln

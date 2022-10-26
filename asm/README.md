@@ -25,13 +25,17 @@ bintools>
 
 I wanted to provide a few code examples to illustrate usage. These are taken 
 from a small library of routines that I've developed as part of building and
-testing the bintools project.
+testing the bintools project. A semi-colon marks a single-line comment.
 
 Here is a small function to check whether a character is lowercase. As the
 comments show, the character is passed in the A register. The boolean result
 is returned in A.
 
 ```
+
+; define some useful constants
+TRUE    EQU 1
+FALSE   EQU 0
 
 ;=============================================
 ; Desc: check if character is lowercase
@@ -47,20 +51,22 @@ PROC islower
     CMP 'z'             ; compare A to 'z'
     JGT islower_fail    ; if greater, return false
 
-    LDA 1               ; return true
+    LDA TRUE            ; return true
     RET
 
 islower_fail:
-    LDA 0               ; return false
+    LDA FALSE           ; return false
     RET
 
 ```
 
-Note that a function begins with the `PROC` statement followed by the name of 
-the function. This defines a symbol so that other routines can call this one.
-Next, the code compares the character to lowercase 'a', if the character is 
-less than 'a' we return a false value in `A`. Similarly if the character is 
-greater than 'z' we return false. Otherwise we return true in `A`.
+First, note the constant definitions via the `EQU` keyword. This is a way to
+define symbolic names for numberic values. Next, note that functions begin with
+the `PROC` statement followed by the name of the function. This defines a 
+symbol so that other routines can call this one. Next, the code compares the 
+character to lowercase 'a', if the character is less than 'a' we return a false
+value in `A`. Similarly if the character is greater than 'z' we return false. 
+Otherwise we return true in `A`.
 
 Below is an example of a function to compute the length of a 
 null-terminated string.
@@ -95,10 +101,16 @@ strlen_done:
 
 ```
 
+Note the use of the `POP` instruction to pop multiple values off the stack 
+including the return address. You can both `PUSH` and `POP` multiple registers
+from the stack in single instructions. The order of registers is pre-determined
+for consistency. Doing this avoids the need for an explicit `RET` instruction 
+saving one byte of code. This is a common pattern in the libraries I've 
+written.
 
 ## Assembler directives
 
-There are a number of assembler directives
+There are a number of assembler directives. These are listed below.
 
 Directive | Description
 --------- | -----------

@@ -999,14 +999,9 @@ void Cisc::popAll()
 
 	Y = pop() | (pop() << 8);
 	X = pop() | (pop() << 8);
+
 	SP = pop() | (pop() << 8);
 	PC = pop() | (pop() << 8);
-
-	//Y = (pop() << 8) | pop();
-	//X = (pop() << 8) | pop();
-
-	//SP = (pop() << 8) | pop();
-	//PC = (pop() << 8) | pop();
 }
 
 // process an interrupt request

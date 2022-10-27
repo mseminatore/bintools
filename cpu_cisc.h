@@ -136,6 +136,7 @@ enum
 	FLAG_V = 4,		// overflow flag, bit 2
 	FLAG_N = 8,		// negative flag, bit 3
 	FLAG_I = 16,	// interrupt flag, bit 4
+	FLAG_S = 32,	// single step flag, bit 5
 
 	FLAG_ALL = 0xFF
 };

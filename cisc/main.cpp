@@ -14,7 +14,7 @@
 #define TSTF(flag) ((CC & flag) != 0)
 
 //
-bool singleStep = true;
+//bool singleStep = true;
 static const int SMALL_BUFFER = 256;
 
 // define our CPU arch
@@ -90,12 +90,17 @@ public:
 	void pushAll();
 	void popAll();
 	void updateFlag(uint32_t result, uint8_t flag);
-	void exec();
-	void tick();
+
+	uint8_t exec();
+	uint8_t tick();
+
 	void interrupt(uint32_t vector);
 
+	uint8_t getCC() const	{ return CC;  }
+	void setCC(uint8_t cc)	{ CC = cc; }
+
 	// breakpoints
-	uint16_t getPC() { return PC; }
+	uint16_t getPC() const { return PC; }
 	bool getSymbolAddress(const std::string &name, uint16_t &addr);
 	bool getSymbolName(uint16_t addr, std::string &name);
 	void addBreakpoint(uint16_t addr) { breakpoints.insert(addr); }
@@ -146,7 +151,7 @@ public:
 	void printRegisters()
 	{
 		printf("A: %02X X: %04X Y: %04X CC: %02X SP: %04X PC: %04X\n", A, X, Y, CC, SP, PC);
-		printf("Flags C: %d Z: %d V: %d N: %d I: %d\n", TSTF(FLAG_C), TSTF(FLAG_Z), TSTF(FLAG_V), TSTF(FLAG_N), TSTF(FLAG_I));
+		printf("Flags C: %d Z: %d V: %d N: %d I: %d S: %d\n", TSTF(FLAG_C), TSTF(FLAG_Z), TSTF(FLAG_V), TSTF(FLAG_N), TSTF(FLAG_I), TSTF(FLAG_S));
 	}
 
 	void printByte(uint16_t addr)
@@ -167,6 +172,8 @@ public:
 		hexDumpLine(stdout, addr + 16, &ram[addr + 16]);
 	}
 };
+
+Cisc cpu;
 
 //
 //
@@ -276,7 +283,7 @@ void Cisc::getRegisterList(uint8_t operand, std::string &str)
 //
 void Cisc::log(const char *fmt, ...)
 {
-	if (!singleStep)
+	if (!TSTF(FLAG_S) /*singleStep*/)
 		return;
 
 	char buf[SMALL_BUFFER];
@@ -425,7 +432,7 @@ void Cisc::outputByte()
 }
 
 //
-void Cisc::exec()
+uint8_t Cisc::exec()
 {
 	std::string name;
 	uint8_t operand;
@@ -930,10 +937,12 @@ void Cisc::exec()
 	default:
 		panic();
 	}
+
+	return opcode;
 }
 
 // update a single CPU instruction clock tick
-void Cisc::tick()
+uint8_t Cisc::tick()
 {
 	timer++;
 
@@ -943,8 +952,10 @@ void Cisc::tick()
 		interrupt(INT_VECTOR);
 
 	opcode = fetch();
+
 	decode();
-	exec();
+
+	return exec();
 }
 
 // fetch a code byte value
@@ -1087,13 +1098,15 @@ uint16_t Cisc::getAddressFromToken(char *tok)
 // Ctrl-C pressed
 void sigint(int val)
 {
-	singleStep = true;
+	cpu.setCC(cpu.getCC() | FLAG_S);
+//	singleStep = true;
 }
 
 // Break key pressed
 void sigbreak(int val)
 {
-	singleStep = true;
+	cpu.setCC(cpu.getCC() | FLAG_S);
+	//	singleStep = true;
 }
 
 //
@@ -1107,8 +1120,6 @@ int main(int argc, char* argv[])
 
 	int iFirstArg = getopt(argc, argv);
 
-	Cisc cpu;
-
 	cpu.load(argv[iFirstArg]);
 
 	signal(SIGINT, sigint);
@@ -1117,9 +1128,12 @@ int main(int argc, char* argv[])
 	signal(SIGBREAK, sigbreak);
 #endif
 
+	// start simulation in single step mode
+	cpu.setCC(cpu.getCC() | FLAG_S);
+
 	while (!done)
 	{
-		if (singleStep)
+		if (FLAG_S & cpu.getCC() /*singleStep*/)
 		{
 			printf(">");
 			fgets(buf, SMALL_BUFFER - 1, stdin);
@@ -1134,7 +1148,8 @@ int main(int argc, char* argv[])
 				done = true;
 			else if (!strcmp(pToken, "g"))			// go, run program
 			{
-				singleStep = false;
+				cpu.setCC(cpu.getCC() & ~FLAG_S);
+				//singleStep = false;
 				cpu.tick();
 			}
 			else if (!strcmp(pToken, "n"))			// step over
@@ -1144,8 +1159,13 @@ int main(int argc, char* argv[])
 			}
 			else if (!strcmp(pToken, "fi"))			// finish current function
 			{
-//				singleStep = false;
-//				cpu.tick();
+				cpu.setCC(cpu.getCC() & ~FLAG_S);
+				//singleStep = false;
+
+				while (OP_RET != cpu.tick());
+
+				cpu.setCC(cpu.getCC() | FLAG_S);
+				//singleStep = true;
 			}
 			else if (!strcmp(pToken, "m"))
 			{
@@ -1222,7 +1242,7 @@ int main(int argc, char* argv[])
 		}
 		else
 		{
-			while (!singleStep)
+			while (!(FLAG_S & cpu.getCC()) /*singleStep*/)
 			{ 
 				auto pc = cpu.getPC();
 				if (cpu.isBreakpoint(pc))
@@ -1231,7 +1251,9 @@ int main(int argc, char* argv[])
 
 					cpu.getSymbolName(pc, name);
 					fprintf(stdout, "hit breakpoint @ 0x%04X %s\n", pc, name.c_str());
-					singleStep = true;
+
+					cpu.setCC(cpu.getCC() | FLAG_S);
+					//singleStep = true;
 				}
 				else
 					cpu.tick();

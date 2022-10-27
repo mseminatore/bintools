@@ -19,6 +19,8 @@ Which means that there are separate 64KB address spaces for instruction code
 `I` and data `D`. The `I` space is read-only memory and the `D` is read-write 
 memory. You can think of these two memory spaces as representing ROM and RAM.
 
+The processor is little endian.
+
 ## Registers
 
 I wanted to keep the CPU as simple as possible. So there are a very small 
@@ -126,7 +128,7 @@ JLT M | jump if less than | (none)
 JMP M | unconditional jump | (none)
 JNE M | jump if not equal | (none)
 NOP | no or null operation | (none)
-NOT | logical complement of A |
+NOT | logical complement of A | CZNV
 OR M/imm8 | logical OR of A and memory/immediate | ZNV
 OUT P | output byte in A to an IO port | (none)
 POP Rset | pop one or more registers from the stack | (none)

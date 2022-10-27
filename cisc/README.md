@@ -64,7 +64,8 @@ C | Carry flag - last arithmetic operation caused a carry/borrow
 Z | Zero flag - last operation produced a zero result
 V | Overflow flag - last arithmetic operation caused a signed overflow
 N | Negative flag - last operation produced a negative number
-I | Interrupt flag - interrupts are disabled
+I | Interrupt flag - interrupts are in progress or disabled
+S | Single step flag - processor is in single step mode
 
 ## Instruction Design
 
@@ -92,9 +93,11 @@ jump if less than `JLT`. And Likewise with `JLE` and `JGT`.
 ## Instruction Set
 
 Instruction opcodes are all 8-bits in length. Each opcode is followed by zero 
-or more bytes containing operands. Below is a complete list of the instructions.
+or more bytes containing operands.
 
-Label | Description
+The various types of instruction operands are shown in the table below.
+
+Operand | Description
 ----- | -----------
 R | register
 Rset | one or more registers
@@ -104,6 +107,8 @@ M | reference to memory (code or data as appropriate)
 M/imm8 | either a memory reference or an immediate byte
 M/imm16 | either a memory reference or an immediate word
 P | I/O port number
+
+Below is a complete list of the instructions.
 
 Instruction | Description | Flags
 ----------- | ----------- | -----

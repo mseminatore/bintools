@@ -2,8 +2,12 @@
 *.d
 
 # Asm files
-*.asm
-*.inc
+#*.asm
+#*.inc
+
+# Script files
+*.bat
+*.cmd
 
 # Compiled Object files
 *.slo
@@ -53,10 +57,11 @@ Debug/
 bin/
 
 # output files
-asm
-ln
-dumpbin
-cisc
+#asm
+#ln
+#dumpbin
+#cisc
+a.txt
 
 # Bison/Flex files
 bison.hairy.txt

@@ -1,0 +1,3 @@
+EXTERN os_createTask
+EXTERN os_sleep
+EXTERN os_startScheduler

@@ -235,9 +235,8 @@ void Cisc::load(const std::string &filename)
 	}
 }
 
-//
-//
-//
+// stack is full descending
+// push a value onto the stack
 void Cisc::push(uint8_t val)
 {
 	SP--;
@@ -245,17 +244,15 @@ void Cisc::push(uint8_t val)
 	if (SP < maxStack)
 		maxStack = SP;
 
-	if (SP < __brk)
-	{
-		puts("Stack overflow!\n");
-		panic();
-	}
+	//if (SP < __brk)
+	//{
+	//	puts("Stack overflow!\n");
+	//	panic();
+	//}
 
 	ram[SP] = val;
 }
 
-//
-//
 //
 uint8_t Cisc::pop()
 {
@@ -431,7 +428,7 @@ void Cisc::outputByte()
 	log("OUT %d", port);
 }
 
-//
+// execute the next instruction
 uint8_t Cisc::exec()
 {
 	std::string name;

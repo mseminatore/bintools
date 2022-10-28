@@ -1150,8 +1150,10 @@ int main(int argc, char* argv[])
 
 		parser.addWarningCount(parser.reportUnreferencedSymbols());
 
-		printf("Warnings generated: %d\n", parser.getWarningCount());
-		printf("Assembly complete %s -> %s\n", argv[iFirstArg], g_szOutputFilename);
+		if (parser.getWarningCount())
+			printf("\nWarnings generated: %d\n", parser.getWarningCount());
+
+		printf("\nAssembly complete %s -> %s\n", argv[iFirstArg], g_szOutputFilename);
 	}
 
 

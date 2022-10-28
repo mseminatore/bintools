@@ -14,12 +14,26 @@ To assemble a file:
 ```
 
 bintools> asm main.asm
-Warnings generated: 0
+
 Assembly complete main.asm -> a.out
 
 bintools>
 
 ```
+
+Note that the default output filename is a.out. You can change that using the 
+`-o` option as follows:
+
+```
+
+bintools> asm -o main.o main.asm
+
+Assembly complete main.asm -> main.o
+
+bintools>
+
+```
+
 
 ## Assembly code examples
 

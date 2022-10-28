@@ -26,7 +26,6 @@ STACK_SIZE      EQU 127
 ;==========================================
 current     DW 0    ; ptr to current task TCB
 runnable    DW 0    ; ptr to start of runnable queue
-dot         DS "."
 
 ;=======================================
 ; Update our timer tick count
@@ -48,8 +47,8 @@ PROC idleTask
 idle_top:
     ; TODO - count idle cycles?
 
-    LDX dot
-    CALL puts
+    LDA 'X'
+    CALL putc
 
     JMP idle_top
 
@@ -93,11 +92,11 @@ PROC os_startScheduler
     LDX timerIntHandler         ; note this is a CODE PTR!
     STX int_vector
 
-;    LDY idleTask                ; create idle task
-;    CALL os_createTask          ; TODO - check for error?
+    LDY idleTask                ; create idle task
+    CALL os_createTask          ; TODO - check for error?
 
-    ; TODO - this might not be needed since CC for new tasks are 0?
-    CALL rtlEnableInterrupts    ; start pre-emptive scheduling
+    ; not required since the CC for new tasks are 0
+;    CALL rtlEnableInterrupts    ; start pre-emptive scheduling
 
     LDX [runnable]                ; make the first runnable task the current
     STX current
@@ -201,10 +200,21 @@ PROC os_setContext
     LEAX 2              ; advance to point to registers in TCB
 
     PUSH SP             ; get ptr to start of stack regs
-    POP Y
+    POP Y               ; Y points to the stack
     LEAY 2              ; account for return PC for this function
 
     LDA TCB_REG_SIZE    ; 10 bytes of registers
     CALL rtlMemcpy      ; copy from TCB to stack
+
+    LEAY 6              ; point Y to SP on stack
+    PUSH Y              ; save Y
+    LYY                 ; get saved SP
+    LEAY -2             ; adjust stack value to make room for the PC
+    POP X               ; get saved ptr to the stacked SP
+    STYX                ; update the stacked SP
+
+    LEAX 2              ; point X to saved PC
+    LXX                 ; get the saved PC
+    STXY                ; put saved PC on the new stack
 
     RET

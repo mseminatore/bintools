@@ -61,6 +61,8 @@ public:
 	void include();
 	void label();
 	void file();
+	
+//	void parseSTX();
 
 	uint8_t reg();
 	uint8_t regSet();
@@ -93,6 +95,9 @@ enum
 	TV_STY,
 	TV_STAX,
 	TV_STAY,
+
+	TV_STYX,
+	TV_STXY,
 
 	TV_LAX,
 	TV_LEAX,
@@ -188,12 +193,17 @@ TokenTable _tokenTable[] =
 	{ "DS",		TV_DS },
 	{ "DM",		TV_DM },
 
-	{ "LDA",	TV_LDA },
+	// stores
 	{ "STA",	TV_STA },
 	{ "STX",	TV_STX },
 	{ "STY",	TV_STY },
 	{ "STAX",	TV_STAX },
 	{ "STAY",	TV_STAY },
+	{ "STYX",	TV_STYX },
+	{ "STXY",	TV_STXY },
+
+	// loads
+	{ "LDA",	TV_LDA },
 	{ "LDX",	TV_LDX },
 	{ "LDY",	TV_LDY },
 	{ "LAX",	TV_LAX },
@@ -837,6 +847,33 @@ void AsmParser::include()
 	match(TV_STRING);
 }
 
+//
+//void AsmParser::parseSTX()
+//{	
+//	uint8_t offset = 0;
+//
+//	if (lookahead != TV_INTVAL && lookahead != TV_ID && lookahead != ',')
+//	{
+//		dataAddress(OP_STX);
+//		return;
+//	}
+//
+//	// look for an offset
+//	if (lookahead == TV_INTVAL)
+//	{
+//		offset = yylval.ival;
+//		match();
+//	} else if (lookahead == TV_ID)
+//	{
+//		assert(yylval.sym->type == stEqu);
+//		offset = yylval.sym->ival;	// TODO - check for range error?
+//		match();
+//	}
+//
+//	match(',');
+//	obj.addText(OP_STXR);
+//}
+
 // Parse file-level constructs
 void AsmParser::file()
 {
@@ -1015,6 +1052,16 @@ void AsmParser::file()
 
 		case TV_STY:
 			dataAddress(OP_STY);
+			break;
+
+		case TV_STYX:
+			obj.addText(OP_STYX);
+			match();
+			break;
+
+		case TV_STXY:
+			obj.addText(OP_STXY);
+			match();
 			break;
 
 		case TV_STAX:

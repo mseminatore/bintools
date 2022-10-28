@@ -90,6 +90,9 @@ enum
 	OP_LAX,		// load A from [X]
 	OP_LAY,		// load A from [Y]
 
+	OP_LXX,		// load X from [X]
+	OP_LYY,		// load X from [Y]
+
 	OP_STA,		// store A to memory
 	OP_STX,		// store X to memory
 	OP_STY,		// store Y to memory
@@ -97,8 +100,8 @@ enum
 	OP_STAX,	// store A to [X]
 	OP_STAY,	// store A to [Y]
 
-	OP_LXX,		// load X from [X]
-	OP_LYY,		// load X from [Y]
+	OP_STYX,	// store Y to [X]
+	OP_STXY,	// store X to [Y]
 
 	// stack
 	OP_PUSH,	// push one or more registers on the stack

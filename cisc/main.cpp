@@ -903,6 +903,20 @@ uint8_t Cisc::exec()
 		log("STAY");
 		break;
 
+	case OP_STYX:
+		ram[X] = LOBYTE(Y);
+		ram[X + 1] = HIBYTE(Y);
+
+		log("STYX");
+		break;
+
+	case OP_STXY:
+		ram[Y] = LOBYTE(X);
+		ram[Y + 1] = HIBYTE(X);
+
+		log("STXY");
+		break;
+
 	case OP_PUSH:
 		pushRegs();
 		break;
@@ -945,7 +959,7 @@ uint8_t Cisc::tick()
 
 	// check for timer interrupts
 	// TODO - allow freq to be set in reg/memory?
-	if (0 == (timer % 30))
+	if (255 == timer)
 		interrupt(INT_VECTOR);
 
 	opcode = fetch();

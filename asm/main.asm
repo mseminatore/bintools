@@ -71,8 +71,11 @@ done:
 PROC task
 
 task_top:
-    LDX source
-    CALL puts
+;    LDX source
+;    CALL puts
+
+    LDA '.'
+    CALL putc
 
     JMP task_top
 

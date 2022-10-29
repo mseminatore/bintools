@@ -36,7 +36,7 @@ PROC timerIntHandler
 ;    LEAX 1          ; increment it
 ;    STX systick     ; save it
 
-;    CALL os_schedule       ; schedule the next runnable task
+;    CALL _os_schedule       ; schedule the next runnable task
 
     RTI
 
@@ -63,7 +63,7 @@ idle_top:
 ;
 ; Return: none
 ;==========================================
-PROC os_schedule
+PROC _os_schedule
     PUSH X, Y
     LDY [current]           ; get ptr to current task TCB
 
@@ -91,12 +91,15 @@ PROC os_schedule
 ;
 ;==========================================
 PROC os_sleep
-    CALL os_schedule
+    CALL _os_schedule
     RET
 
 ;==========================================
 ; Desc: Start the task scheduler
 ;
+; Input: none
+;
+; Return: none - never returns to caller
 ;==========================================
 PROC os_startScheduler
     ;
@@ -111,12 +114,14 @@ PROC os_startScheduler
     CALL os_createTask          ; TODO - check for error?
 
     ; not required since the CC for new tasks are 0
-;    CALL rtlEnableInterrupts    ; start pre-emptive scheduling
+;    CALL rtlEnableInterrupts   ; start pre-emptive scheduling
 
-    LDX [runnable]                ; make the first runnable task the current
+    LDX [runnable]              ; make the first runnable task the current
     STX current
 
     ; setup stack for the current task
+    PUSH SP                     ; get SP in Y
+    POP Y
     CALL os_setContext
 
     RTI                         ; fake a return from interrupt
@@ -226,11 +231,8 @@ PROC os_getContext
 ; Input: X points to source TCB, Y points to registers on stack
 ;================================================================
 PROC os_setContext
+    PUSH X, Y           ; save X and Y
     LEAX 2              ; advance X to point to registers in TCB
-
-    PUSH SP             ; get ptr to start of stack regs
-    POP Y               ; Y points to the stack
-    LEAY 2              ; account for return PC for this function
 
     LDA TCB_REG_SIZE    ; 10 bytes of registers
     CALL rtlMemcpy      ; copy from TCB to stack
@@ -246,4 +248,5 @@ PROC os_setContext
     LXX                 ; get the saved PC
     STXY                ; put saved PC on the new stack
 
+    POP X, Y            ; restore X, Y and return
     RET

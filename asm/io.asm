@@ -71,6 +71,51 @@ puts_done:
 
     POP A, X, PC        ; restore A, X and return
 
+;=============================================
+; Input: A has value in lower nibble
+;=============================================
+PROC printHexNibble
+    PUSH A              ; save A
+
+    CMP 9               ; check if a letter
+    JGT printHex_letter
+
+    ADD '0'             ; make number a printable char
+    CALL putc           ; print it
+    JMP printHex_done
+
+printHex_letter:
+    ADD 'A'             ; shift number to [A-F]
+    SUB 10
+    CALL putc           ; print it
+
+printHex_done:
+    POP A               ; restore A
+    RET
+
+;=============================================
+; Desc: print given byte in hex form
+;
+; Input: A byte to print
+;
+; Return: none
+;=============================================
+PROC printHexByte
+    PUSH A              ; save A
+    PUSH A              ; make a copy of A
+
+    AND 0xF0            ; get top nibble
+    SHR 4               ; shift to lower nibble
+    AND 0x7F            ; mask off top bit
+    CALL printHexNibble ; print hex digit
+
+    POP A               ; get original copy of A
+    AND 0x0F            ; get lower nibble
+    CALL printHexNibble ; print hex digit
+
+    POP A               ; restore A and return
+    RET
+
 ;=======================================
 ; Desc: open a file
 ;
@@ -81,3 +126,4 @@ puts_done:
 PROC open
     LDA -1
     RET
+

@@ -442,6 +442,37 @@ uint8_t Cisc::exec()
 		log("NOP");
 		break;
 
+	case OP_SHL:
+		operand = fetch();
+
+		temp16 = A << operand;
+
+		updateFlag(temp16 & 0xFF00, FLAG_C);
+		updateFlag(temp16 == 0, FLAG_Z);
+		updateFlag(temp16 & 0x80, FLAG_N);
+		updateFlag(checkOverflow(temp16), FLAG_V);
+
+		A = temp16 & 0xFF;
+
+		log("SHL %d", operand);
+		break;
+
+	case OP_SHR:
+		operand = fetch();
+
+		temp16 = A & 0x80;	// save top bit 7
+
+		updateFlag(A & 1, FLAG_C);
+
+		A = A >> operand;
+		A = A | temp16;		// restore top bit 7
+
+		updateFlag(A == 0, FLAG_Z);
+		updateFlag(A & 0x80, FLAG_N);
+
+		log("SHR %d", operand);
+		break;
+
 	case OP_ADD:
 		addr = fetchW();
 		temp16 = A + ram[addr];

@@ -5,6 +5,7 @@ EXTERN putc
 EXTERN getc
 EXTERN puts
 EXTERN gets
+EXTERN printHexByte
 
 EOF EQU -1
 

@@ -58,13 +58,20 @@ enum
 	// logical
 	OP_AND, 
 	OP_ANDI,
+
 	OP_OR, 
 	OP_ORI,
-	OP_NOT, 
+
+	OP_NOT,		// A = ~A
+
 	OP_XOR, 
 	OP_XORI,
-	//OP_ROL, OP_ROR,
-	//OP_SHL, OP_SHR,
+	
+	//OP_ROL, 
+	// OP_ROR,
+
+	OP_SHL,		// A <<= 1
+	OP_SHR,		// A >>= 1
 
 	// branching
 	OP_CALL,	// branch to a function

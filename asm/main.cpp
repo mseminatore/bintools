@@ -82,6 +82,9 @@ enum
 	TV_AAX,
 	TV_AAY,
 
+	TV_SHL,
+	TV_SHR,
+
 	TV_CMP,
 	TV_CMPX,
 	TV_CMPY,
@@ -166,6 +169,9 @@ TokenTable _tokenTable[] =
 	{ "SBB",	TV_SBB },
 	{ "AAX",	TV_AAX },
 	{ "AAY",	TV_AAY },
+
+	{ "SHL",	TV_SHL },
+	{ "SHR",	TV_SHR },
 
 	{ "CMP",	TV_CMP },
 	{ "CMPX",	TV_CMPX },
@@ -941,6 +947,16 @@ void AsmParser::file()
 		case TV_NOP:
 			obj.addText(OP_NOP);
 			match();
+			break;
+
+		case TV_SHL:
+			match();
+			imm8(OP_SHL);
+			break;
+
+		case TV_SHR:
+			match();
+			imm8(OP_SHR);
 			break;
 
 		case TV_ADD:

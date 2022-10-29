@@ -26,6 +26,7 @@ STACK_SIZE      EQU 127
 ;==========================================
 current     DW 0    ; ptr to current task TCB
 runnable    DW 0    ; ptr to start of runnable queue
+task_msg    DS "New task created, TCB is at: 0x"
 
 ;=======================================
 ; Update our timer tick count
@@ -56,18 +57,32 @@ idle_top:
     RET
 
 ;==========================================
-; Desc: switch to next running task
+; Desc: switch to next runnable task
 ;
+; Input: none
 ;
+; Return: none
 ;==========================================
 PROC os_schedule
-    LDX [current]           ; get current task
+    PUSH X, Y
+    LDY [current]           ; get ptr to current task TCB
+
+    PUSH SP                 ; get current SP in X
+    POP X
+    LEAX 6                  ; adjust for PC and pushes
     CALL os_getContext      ; save its stack to the TCB
 
+    BRK
+
     ; get ptr to next task in the runnable queue
+
     ; make it the current
+
     ; restore its context
+    CALL os_setContext
+
     ; return to the new task    
+    POP X, Y
     RET
 
 ;==========================================
@@ -103,8 +118,6 @@ PROC os_startScheduler
 
     ; setup stack for the current task
     CALL os_setContext
-
-    BRK
 
     RTI                         ; fake a return from interrupt
 
@@ -169,35 +182,51 @@ PROC os_createTask
     STAX                    ; store it
 
 os_createTask_done:
+    LDX task_msg            ; print new task info
+    CALL puts
+    LDX [runnable]          ; get ptr to new task TCB
+    PUSH X
+    POP A
+    POP A                   ; get top byte of new task
+    CALL printHexByte
+
+    PUSH X
+    POP A
+    CALL printHexByte
+    POP A
+
+    LDA '\n'
+    CALL putc
+
     POP A, X, Y
     RET
 
-;==========================================
-; Desc: get current execution context from stack
+;====================================================================
+; Desc: copy current execution context from stack to TCB
 ;
-; Input: Y points to destination TCB
+; Input: X points to registers on stack, Y points to destination TCB
 ;
 ; Return: none
-;==========================================
+;=====================================================================
 PROC os_getContext
-    LEAY 2              ; advance to point to registers in TCB
+    PUSH X, Y           ; save X and Y
+    LEAY 2              ; advance Y to point to registers in TCB
 
-    PUSH SP             ; get ptr to start of stack regs
-    POP X
-;    LEAX 2              ; account for return PC for this function
+    LEAX 6              ; account for return PC and pushes for this function
 
     LDA TCB_REG_SIZE    ; 10 bytes of registers
     CALL rtlMemcpy      ; copy from stack to TCB
 
+    POP X, Y            ; restore X, Y and return
     RET
 
-;==========================================
-; Desc: set current execution context on stack
+;================================================================
+; Desc: copy current execution context from TCB to stack
 ;
-; Input: X points to source TCB
-;==========================================
+; Input: X points to source TCB, Y points to registers on stack
+;================================================================
 PROC os_setContext
-    LEAX 2              ; advance to point to registers in TCB
+    LEAX 2              ; advance X to point to registers in TCB
 
     PUSH SP             ; get ptr to start of stack regs
     POP Y               ; Y points to the stack

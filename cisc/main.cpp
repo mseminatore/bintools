@@ -113,7 +113,7 @@ public:
 		if (getSymbolAddress(name, addr))
 		{
 			breakpoints.erase(addr);
-			log("removed breakpoint @ 0x%04X", addr);
+			log("removed breakpoint @ %s (0x%04X)", name.c_str(), addr);
 
 			return true;
 		}
@@ -129,7 +129,7 @@ public:
 		if (getSymbolAddress(name, addr))
 		{
 			addBreakpoint(addr);
-			log("breakpoint @ 0x%04X", addr);
+			log("breakpoint set @ %s (0x%04X)", name.c_str(), addr);
 
 			return true;
 		}
@@ -452,8 +452,11 @@ uint8_t Cisc::exec()
 		updateFlag(checkOverflow(temp16), FLAG_V);
 
 		A = temp16 & 0xFF;
-		
-		log("ADD [0x%X]", addr);
+
+		if (obj.findSymbolByAddr(addr, name))
+			log("ADD [%s]", name.c_str());
+		else
+			log("ADD [0x%X]", addr);
 		break;
 
 	case OP_ADDI:
@@ -481,7 +484,10 @@ uint8_t Cisc::exec()
 
 		A = temp16 & 0xFF;
 
-		log("ADC [0x%X]", addr);
+		if (obj.findSymbolByAddr(addr, name))
+			log("ADC [%s]", name.c_str());
+		else
+			log("ADC [0x%X]", addr);
 		break;
 
 	case OP_ADCI:
@@ -510,7 +516,6 @@ uint8_t Cisc::exec()
 		log("AAY");
 		break;
 
-
 	case OP_CMP:
 		addr = fetchW();
 		temp16 = A - ram[addr];
@@ -520,9 +525,12 @@ uint8_t Cisc::exec()
 		updateFlag(temp16 & 0x80, FLAG_N);
 		updateFlag(checkOverflow(temp16), FLAG_V);
 
-		// discard results!
+		// Note: we discard the result!
 
-		log("CMP [0x%X]", addr);
+		if (obj.findSymbolByAddr(addr, name))
+			log("CMP [%s]", name.c_str());
+		else
+			log("CMP [0x%X]", addr);
 		break;
 
 	case OP_CMPI:
@@ -535,8 +543,10 @@ uint8_t Cisc::exec()
 		updateFlag(checkOverflow(temp16), FLAG_V);
 
 		// discard results!
-
-		log("CMP %d\t'%c'\t0x%X", operand, operand, operand);
+		{
+			char c = operand ? operand : '0';
+			log("CMP %d\t;'%c'\t0x%X", operand, c, operand);
+		}
 		break;
 	case OP_SUB:
 		addr = fetchW();
@@ -549,7 +559,10 @@ uint8_t Cisc::exec()
 
 		A = temp16 & 0xFF;
 
-		log("SUB [0x%X]", addr);
+		if (obj.findSymbolByAddr(addr, name))
+			log("SUB [%s]", name.c_str());
+		else
+			log("SUB [0x%X]", addr);
 		break;
 
 	case OP_SUBI:
@@ -563,7 +576,7 @@ uint8_t Cisc::exec()
 
 		A = temp16 & 0xFF;
 
-		log("SUB %d", operand);
+		log("SUB 0x%X", operand);
 		break;
 
 	case OP_SBB:
@@ -577,7 +590,10 @@ uint8_t Cisc::exec()
 
 		A = temp16 & 0xFF;
 
-		log("SBB [0x%X]", addr);
+		if (obj.findSymbolByAddr(addr, name))
+			log("SBB [%s]", name.c_str());
+		else
+			log("SBB [0x%X]", addr);
 		break;
 
 	case OP_SBBI:
@@ -602,7 +618,10 @@ uint8_t Cisc::exec()
 		updateFlag(A & 0x80, FLAG_N);
 		updateFlag(0, FLAG_V);
 
-		log("AND [0x%X]", addr);
+		if (obj.findSymbolByAddr(addr, name))
+			log("AND [%s]", name.c_str());
+		else
+			log("AND [0x%X]", addr);
 		break;
 	
 	case OP_ANDI:
@@ -613,7 +632,7 @@ uint8_t Cisc::exec()
 		updateFlag(A & 0x80, FLAG_N);
 		updateFlag(0, FLAG_V);
 
-		log("AND %d", operand);
+		log("AND 0x%X", operand);
 		break;
 
 	case OP_OR:
@@ -624,7 +643,10 @@ uint8_t Cisc::exec()
 		updateFlag(A & 0x80, FLAG_N);
 		updateFlag(0, FLAG_V);
 
-		log("OR [0x%X]", addr);
+		if (obj.findSymbolByAddr(addr, name))
+			log("OR [%s]", name.c_str());
+		else
+			log("OR [0x%X]", addr);
 		break;
 
 	case OP_ORI:
@@ -635,7 +657,7 @@ uint8_t Cisc::exec()
 		updateFlag(A & 0x80, FLAG_N);
 		updateFlag(0, FLAG_V);
 
-		log("OR %d", operand);
+		log("OR 0x%X", operand);
 		break;
 
 	case OP_XOR:
@@ -646,7 +668,10 @@ uint8_t Cisc::exec()
 		updateFlag(A & 0x80, FLAG_N);
 		updateFlag(0, FLAG_V);
 
-		log("XOR [0x%X]", addr);
+		if (obj.findSymbolByAddr(addr, name))
+			log("XOR [%s]", name.c_str());
+		else
+			log("XOR [0x%X]", addr);
 		break;
 
 	case OP_XORI:
@@ -657,7 +682,7 @@ uint8_t Cisc::exec()
 		updateFlag(A & 0x80, FLAG_N);
 		updateFlag(0, FLAG_V);
 
-		log("XOR %d", operand);
+		log("XOR 0x%X", operand);
 		break;
 
 	case OP_NOT:
@@ -682,11 +707,15 @@ uint8_t Cisc::exec()
 
 		obj.findSymbolByAddr(PC, name);
 
-		log("CALL %s (0x%X)", name.c_str(), PC);
+		if (obj.findSymbolByAddr(addr, name))
+			log("CALL %s", name.c_str());
+		else
+			log("CALL %s (0x%X)", name.c_str(), PC);
 		break;
 	
 	case OP_RET:
 		PC = pop() | (pop() << 8);
+
 		log("RET");
 		break;
 
@@ -699,9 +728,10 @@ uint8_t Cisc::exec()
 	case OP_JMP:
 		PC = fetchW();
 
-//		obj.findSymbolByAddr(PC, name);
-
-		log("JMP 0x%X", PC);
+		if (obj.findSymbolByAddr(PC, name))
+			log("JMP %s", name.c_str());
+		else
+			log("JMP 0x%X", PC);
 		break;
 
 	case OP_JNE:
@@ -709,7 +739,10 @@ uint8_t Cisc::exec()
 		if (!TSTF(FLAG_Z))
 			PC = addr;
 
-		log("JNE 0x%X", addr);
+		if (obj.findSymbolByAddr(addr, name))
+			log("JNE %s", name.c_str());
+		else
+			log("JNE 0x%X", addr);
 		break;
 
 	case OP_JEQ:
@@ -717,7 +750,10 @@ uint8_t Cisc::exec()
 		if (TSTF(FLAG_Z))
 			PC = addr;
 
-		log("JEQ 0x%X", addr);
+		if (obj.findSymbolByAddr(addr, name))
+			log("JEQ %s", name.c_str());
+		else
+			log("JEQ 0x%X", addr);
 		break;
 
 	case OP_JGT:
@@ -725,7 +761,10 @@ uint8_t Cisc::exec()
 		if (!TSTF(FLAG_Z) && ( (TSTF(FLAG_N) && TSTF(FLAG_V)) || (!TSTF(FLAG_N) && !TSTF(FLAG_V)) ) )
 			PC = addr;
 
-		log("JGT 0x%X", addr);
+		if (obj.findSymbolByAddr(addr, name))
+			log("JGT %s", name.c_str());
+		else
+			log("JGT 0x%X", addr);
 		break;
 
 	case OP_JLT:
@@ -733,7 +772,10 @@ uint8_t Cisc::exec()
 		if ( (TSTF(FLAG_N) || TSTF(FLAG_V)) && !(TSTF(FLAG_N) && TSTF(FLAG_V)) )
 			PC = addr;
 
-		log("JLT 0x%X", addr);
+		if (obj.findSymbolByAddr(addr, name))
+			log("JLT %s", name.c_str());
+		else
+			log("JLT 0x%X", addr);
 		break;
 
 	case OP_LAX:
@@ -764,7 +806,10 @@ uint8_t Cisc::exec()
 		updateFlag(A & 0x80, FLAG_N);
 		updateFlag(0, FLAG_V);
 
-		log("LDA [0x%X]", addr);
+		if (obj.findSymbolByAddr(addr, name))
+			log("LDA [%s]", name.c_str());
+		else
+			log("LDA [0x%X]", addr);
 		break;
 
 	case OP_LDAI:
@@ -775,7 +820,7 @@ uint8_t Cisc::exec()
 		updateFlag(A & 0x80, FLAG_N);
 		updateFlag(0, FLAG_V);
 
-		log("LDA %d", operand);
+		log("LDA 0x%X", operand);
 		break;
 
 	case OP_LDX:
@@ -786,7 +831,10 @@ uint8_t Cisc::exec()
 		updateFlag(X & 0x8000, FLAG_N);
 		updateFlag(0, FLAG_V);
 
-		log("LDX [0x%X]", addr);
+		if (obj.findSymbolByAddr(addr, name))
+			log("LDX [%s]", name.c_str());
+		else
+			log("LDX [0x%X]", addr);
 		break;
 
 	case OP_LDXI:
@@ -796,7 +844,7 @@ uint8_t Cisc::exec()
 		updateFlag(X & 0x8000, FLAG_N);
 		updateFlag(0, FLAG_V);
 
-		log("LDX %d", X);
+		log("LDX 0x%X", X);
 		break;
 
 	case OP_LDY:
@@ -807,7 +855,10 @@ uint8_t Cisc::exec()
 		updateFlag(Y & 0x8000, FLAG_N);
 		updateFlag(0, FLAG_V);
 
-		log("LDY [0x%X]", addr);
+		if (obj.findSymbolByAddr(addr, name))
+			log("LDY [%s]", name.c_str());
+		else
+			log("LDY [0x%X]", addr);
 		break;
 
 	case OP_LDYI:
@@ -817,7 +868,7 @@ uint8_t Cisc::exec()
 		updateFlag(Y & 0x8000, FLAG_N);
 		updateFlag(0, FLAG_V);
 
-		log("LDY %d", Y);
+		log("LDY 0x%X", Y);
 		break;
 
 	case OP_LEAX:
@@ -868,7 +919,10 @@ uint8_t Cisc::exec()
 
 		obj.findSymbolByAddr(addr, name);
 
-		log("STA %s (0x%X)", name.c_str(), addr);
+		if (obj.findSymbolByAddr(addr, name))
+			log("STA %s", name.c_str());
+		else
+			log("STA 0x%X", addr);
 		break;
 
 	case OP_STX:
@@ -878,7 +932,10 @@ uint8_t Cisc::exec()
 
 		obj.findSymbolByAddr(addr, name);
 
-		log("STX %s (0x%X)", name.c_str(), addr);
+		if (obj.findSymbolByAddr(addr, name))
+			log("STX %s", name.c_str());
+		else
+			log("STX 0x%X", addr);
 		break;
 
 	case OP_STY:
@@ -888,7 +945,10 @@ uint8_t Cisc::exec()
 
 		obj.findSymbolByAddr(addr, name);
 
-		log("STY %s (0x%X)", name.c_str(), addr);
+		if (obj.findSymbolByAddr(addr, name))
+			log("STY %s", name.c_str());
+		else
+			log("STY 0x%X", addr);
 		break;
 
 	case OP_STAX:

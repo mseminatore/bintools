@@ -180,9 +180,14 @@ Cisc cpu;
 //
 void Cisc::listBreakpoints()
 {
+	std::string name;
+
 	for (auto it = breakpoints.begin(); it != breakpoints.end(); it++)
 	{
-		printf("breakpoint @ 0x%04X\n", *it);
+		if (getSymbolName(*it, name))
+			printf("breakpoint @ %s (0x%04X)\n", name.c_str(), *it);
+		else
+			printf("breakpoint @ 0x%04X\n", *it);
 	}
 }
 
@@ -1352,7 +1357,7 @@ int main(int argc, char* argv[])
 					std::string name;
 
 					cpu.getSymbolName(pc, name);
-					fprintf(stdout, "hit breakpoint @ 0x%04X %s\n", pc, name.c_str());
+					fprintf(stdout, "hit breakpoint @ %s (0x%04X)\n", name.c_str(), pc);
 
 					cpu.setCC(cpu.getCC() | FLAG_S);
 					//singleStep = true;

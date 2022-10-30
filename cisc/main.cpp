@@ -433,6 +433,15 @@ void Cisc::outputByte()
 	log("OUT %d", port);
 }
 
+//
+char makePrintable(char c)
+{
+	if (isprint(c))
+		return c;
+
+	return '?';
+}
+
 // execute the next instruction
 uint8_t Cisc::exec()
 {
@@ -581,7 +590,7 @@ uint8_t Cisc::exec()
 		// discard results!
 		{
 			char c = operand ? operand : '0';
-			log("CMP %d\t;'%c'\t0x%X", operand, c, operand);
+			log("CMP %d\t;'%c'\t0x%X", operand, makePrintable(c), operand);
 		}
 		break;
 	case OP_SUB:

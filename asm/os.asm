@@ -36,7 +36,7 @@ PROC timerIntHandler
 ;    LEAX 1          ; increment it
 ;    STX systick     ; save it
 
-;    CALL _os_schedule       ; schedule the next runnable task
+    CALL _os_schedule       ; schedule the next runnable task
 
     RTI
 
@@ -48,7 +48,7 @@ PROC idleTask
 idle_top:
     ; TODO - count idle cycles?
 
-    LDA 'X'
+    LDA 'I'
     CALL putc
 
     JMP idle_top
@@ -69,20 +69,69 @@ PROC _os_schedule
 
     PUSH SP                 ; get current SP in X
     POP X
-    LEAX 6                  ; adjust for PC and pushes
+    LEAX 6                  ; adjust for PC and local pushes
     CALL os_getContext      ; save its stack to the TCB
 
-    BRK
+;    BRK
+    
+    LYY                     ; get ptr to next task in the runnable queue
+    JNE os_schedule1        ; if ptr is valid continue
+    LDY [runnable]          ; otherwise start at head of queue
 
-    ; get ptr to next task in the runnable queue
-
-    ; make it the current
+os_schedule1:
+    STY current             ; make next task TCB the current
+    PUSH X                  ; get SP in Y
+    POP Y
+    LDX [current]           ; get the new task TCP in X
 
     ; restore its context
     CALL os_setContext
 
     ; return to the new task    
     POP X, Y
+    RET
+
+;====================================================================
+; Desc: copy current execution context from stack to TCB
+;
+; Input: X points to registers on stack, Y points to destination TCB
+;
+; Return: none
+;=====================================================================
+PROC os_getContext
+    PUSH X, Y           ; save X and Y
+    LEAY 2              ; advance Y to point to registers in TCB
+
+    LDA TCB_REG_SIZE    ; 10 bytes of registers
+    CALL rtlMemcpy      ; copy from stack to TCB
+
+    POP X, Y            ; restore X, Y and return
+    RET
+
+;================================================================
+; Desc: copy current execution context from TCB to stack
+;
+; Input: X points to source TCB, Y points to registers on stack
+;================================================================
+PROC os_setContext
+    PUSH X, Y           ; save X and Y
+    LEAX 2              ; advance X to point to registers in TCB
+
+    LDA TCB_REG_SIZE    ; 10 bytes of registers
+    CALL rtlMemcpy      ; copy from TCB to stack
+
+    LEAY 6              ; point Y to SP on stack
+    PUSH Y              ; save Y
+    LYY                 ; get saved SP
+    LEAY -2             ; adjust stack value to make room for the PC
+    POP X               ; get saved ptr to the stacked SP
+    STYX                ; update the stacked SP
+
+    LEAX 2              ; point X to saved PC
+    LXX                 ; get the saved PC
+    STXY                ; put saved PC on the new stack
+
+    POP X, Y            ; restore X, Y and return
     RET
 
 ;==========================================
@@ -204,49 +253,4 @@ os_createTask_done:
     CALL putc
 
     POP A, X, Y
-    RET
-
-;====================================================================
-; Desc: copy current execution context from stack to TCB
-;
-; Input: X points to registers on stack, Y points to destination TCB
-;
-; Return: none
-;=====================================================================
-PROC os_getContext
-    PUSH X, Y           ; save X and Y
-    LEAY 2              ; advance Y to point to registers in TCB
-
-    LEAX 6              ; account for return PC and pushes for this function
-
-    LDA TCB_REG_SIZE    ; 10 bytes of registers
-    CALL rtlMemcpy      ; copy from stack to TCB
-
-    POP X, Y            ; restore X, Y and return
-    RET
-
-;================================================================
-; Desc: copy current execution context from TCB to stack
-;
-; Input: X points to source TCB, Y points to registers on stack
-;================================================================
-PROC os_setContext
-    PUSH X, Y           ; save X and Y
-    LEAX 2              ; advance X to point to registers in TCB
-
-    LDA TCB_REG_SIZE    ; 10 bytes of registers
-    CALL rtlMemcpy      ; copy from TCB to stack
-
-    LEAY 6              ; point Y to SP on stack
-    PUSH Y              ; save Y
-    LYY                 ; get saved SP
-    LEAY -2             ; adjust stack value to make room for the PC
-    POP X               ; get saved ptr to the stacked SP
-    STYX                ; update the stacked SP
-
-    LEAX 2              ; point X to saved PC
-    LXX                 ; get the saved PC
-    STXY                ; put saved PC on the new stack
-
-    POP X, Y            ; restore X, Y and return
     RET

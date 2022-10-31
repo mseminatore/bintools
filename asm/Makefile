@@ -23,6 +23,14 @@ LIBS = -lm -lc++
 $(TARGET):	$(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
+code:
+	./asm -o main.o main.asm
+	./asm -o rtl.o rtl.asm
+	./asm -o io.o io.asm
+	./asm -o string.o string.asm
+	./asm -o os.o os.asm
+	../ln/ln -o ../ln/a.out main.o rtl.o string.o io.o os.o
+
 clean:
 	rm -f $(OBJS) $(TARGET)
 	

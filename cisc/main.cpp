@@ -587,12 +587,11 @@ uint8_t Cisc::exec()
 		updateFlag(temp16 & 0x80, FLAG_N);
 		updateFlag(checkOverflow(temp16), FLAG_V);
 
-		// discard results!
-		{
-			char c = operand ? operand : '0';
-			log("CMP %d\t;'%c'\t0x%X", operand, makePrintable(c), operand);
-		}
+		// Note: dwe iscard the result!
+
+		log("CMP %d\t;'%c'\t0x%X", operand, makePrintable(operand), operand);
 		break;
+
 	case OP_SUB:
 		addr = fetchW();
 		temp16 = A - ram[addr];

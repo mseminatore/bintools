@@ -920,8 +920,8 @@ uint8_t Cisc::exec()
 		X = (int)X + (char)operand;
 
 		updateFlag(X == 0, FLAG_Z);
-		updateFlag(X & 0x8000, FLAG_N);
-		updateFlag(0, FLAG_V);
+		//updateFlag(X & 0x8000, FLAG_N);
+		//updateFlag(0, FLAG_V);
 
 		log("LEAX %d", (char)operand);
 		break;
@@ -931,8 +931,8 @@ uint8_t Cisc::exec()
 		Y = (int)Y + (char)operand;
 
 		updateFlag(Y == 0, FLAG_Z);
-		updateFlag(Y & 0x8000, FLAG_N);
-		updateFlag(0, FLAG_V);
+		//updateFlag(Y & 0x8000, FLAG_N);
+		//updateFlag(0, FLAG_V);
 
 		log("LEAY %d", (char)operand);
 		break;

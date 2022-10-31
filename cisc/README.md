@@ -106,9 +106,11 @@ imm16 | 16-bit immediate value
 M | reference to memory (code or data as appropriate)
 M/imm8 | either a memory reference or an immediate byte
 M/imm16 | either a memory reference or an immediate word
-P | I/O port number
+P | 8-bit I/O port number
+simm8 | signed 8-bit immediate value
 
-Below is a complete list of the instructions.
+Below is a complete list of the instruction mnemonics, their operands and their
+affect on the `CC` flags.
 
 Instruction | Description | Flags
 ----------- | ----------- | -----
@@ -119,12 +121,15 @@ ADC M/imm8 | add memory/immediate byte into A with carry | | CZNV
 AND M/imm8 | logical AND of A and memory/immediate | ZNV
 BRK | breakpoint interrupt | I
 CALL M | branch to a subroutine | (none)
+CMP M/imm8 | compare A to memory/immediate byte | CZNV
 IN P | input a byte to A from an IO port | (none)
 LAX | load A using X as a pointer | ZNV
 LAY | load A using Y as a pointer | ZNV
 LDA M/imm8 | load A from memory/immediate | ZNV
 LDX M/imm16 | load X from memory/immediate | ZNV
 LDY M/imm16 | load X from memory/immediate | ZNV
+LEAX simm8 | add 8-bit signed immediate offset to X | Z
+LEAY simm8 | add 8-bit signed immediate offset to Y | Z
 LXX | load X from addres pointed to by X | ZNV
 LYY | load Y from addres pointed to by Y | ZNV
 JEQ M | jump on equal | (none)
@@ -141,6 +146,8 @@ PUSH Rset | push one or more registers onto the stack | (none)
 RET | return from subroutine | (none)
 RTI | return from interrupt | (none)
 SBB M/imm8 | subtract with borrow | CZNV
+SHL imm8 | arithmetic shift left | CZNV
+SHR imm8 | arithmetic shift right | CZN
 STA M | store A to memory | (none)
 STAX | store A using X as a pointer | (none)
 STAY | store A using Y as a pointer | (none)

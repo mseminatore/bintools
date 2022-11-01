@@ -3,4 +3,4 @@
 ..\asm -o rtl.o rtl.asm
 ..\asm -o io.o io.asm
 ..\asm -o os.o os.asm
-..\ln -o ..\ln\a.out main.o rtl.o string.o io.o os.o
+..\ln -v -o ..\ln\a.out main.o rtl.o string.o io.o os.o

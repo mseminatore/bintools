@@ -166,6 +166,7 @@ public:
 	SymbolEntity symbolAt(size_t index);
 	bool findSymbol(const std::string &name, SymbolEntity &sym);
 	bool findSymbolByAddr(uint16_t addr, std::string &name);
+	bool findNearestSymbolToAddr(uint16_t addr, std::string &name, uint16_t &symAddr);
 
 	// relocations
 	void addTextRelocation(RelocationEntry&);

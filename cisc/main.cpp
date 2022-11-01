@@ -1137,6 +1137,12 @@ void Cisc::interrupt(uint32_t vector)
 	if (vector == INT_VECTOR && TSTF(FLAG_I))
 		return;
 
+	std::string name;
+	uint16_t addr;
+
+	if (obj.findNearestSymbolToAddr(PC, name, addr))
+		log("breakpoint interrupt @ %s + %d", name.c_str(), PC - addr);
+
 	// save the current context
 	pushAll();
 

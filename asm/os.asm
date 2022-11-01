@@ -19,6 +19,8 @@ INCLUDE "io.inc"
 TCB_SIZE        EQU 12
 TCB_REG_SIZE    EQU 10
 STACK_SIZE      EQU 127
+TCB_SP_OFFSET   EQU 8
+TCB_PC_OFFSET   EQU 10
 
 ;==========================================
 ; Scheduler state variables
@@ -37,6 +39,8 @@ PROC timerIntHandler
 ;    STX systick     ; save it
 
     CALL _os_schedule       ; schedule the next runnable task
+
+    BRK
 
     RTI
 
@@ -72,8 +76,6 @@ PROC _os_schedule
     LEAX 6                  ; adjust for PC and local pushes
     CALL os_getContext      ; save its stack to the TCB
 
-;    BRK
-    
     LYY                     ; get ptr to next task in the runnable queue
     JNE os_schedule1        ; if ptr is valid continue
     LDY [runnable]          ; otherwise start at head of queue

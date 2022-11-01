@@ -72,6 +72,22 @@ bool ObjectFile::findSymbolByAddr(uint16_t addr, std::string &name)
 }
 
 //
+bool ObjectFile::findNearestSymbolToAddr(uint16_t addr, std::string &name, uint16_t &symAddr)
+{
+	auto it = symbolRLookup.begin();
+	for (; it->first < addr && it != symbolRLookup.end(); it++)
+		;
+
+	if (it == symbolRLookup.end())
+		return false;
+
+	symAddr = (uint16_t)it->first;
+	name = it->second;
+
+	return true;
+}
+
+//
 void ObjectFile::concat(ObjectFile *rhs)
 {
 	// combine headers

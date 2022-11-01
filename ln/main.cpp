@@ -170,7 +170,10 @@ int main(int argc, char* argv[])
 	// write the output file
 	files[0]->writeFile(g_szOutputFilename);
 
-	log(LOG_ALWAYS, "Linking complete -> %s\n", g_szOutputFilename);
+	log(LOG_ALWAYS, "Linking complete -> %s\n\n", g_szOutputFilename);
+
+	if (g_bDebug)
+		files[0]->dumpHeader(stdout);
 
 	return 0;
 }

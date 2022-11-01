@@ -171,6 +171,17 @@ public:
 		hexDumpLine(stdout, addr, &ram[addr]);
 		hexDumpLine(stdout, addr + 16, &ram[addr + 16]);
 	}
+
+	void reportLocation()
+	{
+		std::string name;
+		uint16_t addr;
+
+		if (obj.findNearestSymbolToAddr(PC, name, addr))
+			log("stopped @ %s + %d", name.c_str(), PC - addr);
+		else
+			log("stopped @ 0x%X", PC);
+	}
 };
 
 Cisc cpu;
@@ -1137,12 +1148,6 @@ void Cisc::interrupt(uint32_t vector)
 	if (vector == INT_VECTOR && TSTF(FLAG_I))
 		return;
 
-	std::string name;
-	uint16_t addr;
-
-	if (obj.findNearestSymbolToAddr(PC, name, addr))
-		log("breakpoint interrupt @ %s + %d", name.c_str(), PC - addr);
-
 	// save the current context
 	pushAll();
 
@@ -1205,7 +1210,7 @@ uint16_t Cisc::getAddressFromToken(char *tok)
 		tok++;
 	}
 
-	if (isdigit(tok[0]))
+	if (isxdigit(tok[0]))
 		addr = (uint16_t)strtoul(tok, nullptr, base);
 	else
 	{
@@ -1220,14 +1225,12 @@ uint16_t Cisc::getAddressFromToken(char *tok)
 void sigint(int val)
 {
 	cpu.setCC(cpu.getCC() | FLAG_S);
-//	singleStep = true;
 }
 
 // Break key pressed
 void sigbreak(int val)
 {
 	cpu.setCC(cpu.getCC() | FLAG_S);
-	//	singleStep = true;
 }
 
 //
@@ -1256,6 +1259,8 @@ int main(int argc, char* argv[])
 	{
 		if (FLAG_S & cpu.getCC() /*singleStep*/)
 		{
+			cpu.reportLocation();
+
 			printf(">");
 			fgets(buf, SMALL_BUFFER - 1, stdin);
 
@@ -1371,7 +1376,7 @@ int main(int argc, char* argv[])
 					std::string name;
 
 					cpu.getSymbolName(pc, name);
-					fprintf(stdout, "hit breakpoint @ %s (0x%04X)\n", name.c_str(), pc);
+					fprintf(stdout, "breakpoint hit @ %s (0x%04X)\n", name.c_str(), pc);
 
 					cpu.setCC(cpu.getCC() | FLAG_S);
 					//singleStep = true;

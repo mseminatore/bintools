@@ -71,20 +71,22 @@ bool ObjectFile::findSymbolByAddr(uint16_t addr, std::string &name)
 	return false;
 }
 
-//
+// find nearst symbol less than given address
 bool ObjectFile::findNearestSymbolToAddr(uint16_t addr, std::string &name, uint16_t &symAddr)
 {
-	auto it = symbolRLookup.begin();
-	for (; it->first < addr && it != symbolRLookup.end(); it++)
-		;
+	return false;
 
-	if (it == symbolRLookup.end())
-		return false;
+	//auto it = symbolRLookup.begin();
+	//for (; it->first <= addr && it != symbolRLookup.end(); it++)
+	//	;
 
-	symAddr = (uint16_t)it->first;
-	name = it->second;
+	//if (it == symbolRLookup.end())
+	//	return false;
 
-	return true;
+	//symAddr = (uint16_t)it->first;
+	//name = it->second;
+
+	//return true;
 }
 
 //
@@ -436,8 +438,12 @@ int ObjectFile::readFile(FILE *fptr)
 		auto sym = st[i];
 		char *pStr = &(stringTable[sym.nameOffset]);
 		symbolTable.push_back(SymbolTable::value_type(pStr, sym));
-		symbolLookup.insert(SymbolLookup::value_type(pStr, i));
-		symbolRLookup.insert(SymbolRLookup::value_type(sym.value, pStr));
+
+		auto r1 = symbolLookup.insert(SymbolLookup::value_type(pStr, i));
+//		assert(r1.second);
+
+		auto r2 = symbolRLookup.insert(SymbolRLookup::value_type(sym.value, pStr));
+//		assert(r2.second);
 	}
 
 	return 0;

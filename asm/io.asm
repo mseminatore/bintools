@@ -1,3 +1,10 @@
+;==================================================
+; io.asm - I/O routines
+;
+; Copyright 2022 by Mark Seminatore
+; See LICENSE.md for rights and obligations
+;===================================================
+
 INCLUDE "io.inc"
 
 ;=======================================

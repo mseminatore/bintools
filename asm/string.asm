@@ -1,3 +1,9 @@
+;==================================================
+; string.asm - routines for C strings
+;
+; Copyright 2022 by Mark Seminatore
+; See LICENSE.md for rights and obligations
+;===================================================
 INCLUDE "rtl.inc"
 
 ;===============================

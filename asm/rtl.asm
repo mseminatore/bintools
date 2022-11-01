@@ -1,3 +1,10 @@
+;==================================================
+; rtl.asm - run-time library routines
+;
+; Copyright 2022 by Mark Seminatore
+; See LICENSE.md for rights and obligations
+;===================================================
+
 INCLUDE "rtl.inc"
 INCLUDE "error.inc"
 
@@ -241,4 +248,3 @@ PROC add16
 
     POP X          ; restore X and return
     RET
-    

@@ -1,3 +1,10 @@
+;==================================================
+; os.asm - minimal pre-emptive multi-tasking kernel
+;
+; Copyright 2022 by Mark Seminatore
+; See LICENSE.md for rights and obligations
+;===================================================
+
 INCLUDE "rtl.inc"
 INCLUDE "error.inc"
 INCLUDE "io.inc"
@@ -40,7 +47,7 @@ PROC timerIntHandler
 
     CALL _os_schedule       ; schedule the next runnable task
 
-    BRK
+;    BRK
 
     RTI
 
@@ -82,6 +89,7 @@ PROC _os_schedule
 
 os_schedule1:
     STY current             ; make next task TCB the current
+
     PUSH X                  ; get SP in Y
     POP Y
     LDX [current]           ; get the new task TCP in X

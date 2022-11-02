@@ -51,7 +51,7 @@ PROC timerIntHandler
 PROC idleTask
 
 idle_top:
-    LDA 'I'
+    LDA '.'
     CALL putc
 
     JMP idle_top
@@ -154,6 +154,9 @@ PROC os_startScheduler
 ; TODO - check if we are called twice?! Just return if so
 
     ; setup timer interrupt handler
+    LDX 1
+    STX MMIO_TIMER_ENA
+    
     LDX timerIntHandler         ; note this is a CODE PTR!
     STX int_vector
 

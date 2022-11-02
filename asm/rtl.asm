@@ -84,6 +84,8 @@ PROC rtlDisableInterrupts
 PROC rtlInit
     PUSH X
 
+    CALL rtlDisableInterrupts       ; disable interrupts
+
     ; setup SYSTICK handler
     LDX intHandler  ; note this is a CODE PTR!
     STX int_vector

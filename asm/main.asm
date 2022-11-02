@@ -34,8 +34,6 @@ target DS "there!"
 ; Start of program initialization
 ;==========================================
 PROC init
-    CALL rtlDisableInterrupts       ; disable interrupts
-
     CALL rtlInit                    ; initialize runtime
 
     LDX prompt                      ; display welcome prompt
@@ -71,7 +69,7 @@ done:
 PROC task
 
 task_top:
-    LDA '.'
+    LDA '1'
     CALL putc
 
     JMP task_top

@@ -34,9 +34,6 @@ protected:
 	uint16_t maxStack;
 	uint16_t __brk;
 
-	// 8-bit timer register
-	uint8_t timer;
-
 	// instruction buffer
 	uint8_t opcode;
 
@@ -71,7 +68,9 @@ public:
 		SP = RAM_END;
 
 		maxStack = SP;
-		timer = 0;
+		ram[MMIO_TIMER_REG] = 0;
+		ram[MMIO_TIMER_ENA] = 0;
+		ram[MMIO_TIMER_LIM] = 0;
 	}
 
 	uint32_t checkOverflow(uint16_t val);
@@ -217,16 +216,12 @@ bool Cisc::getSymbolAddress(const std::string &name, uint16_t &addr)
 }
 
 //
-//
-//
 bool Cisc::getCodeSymbolName(uint16_t addr, std::string &name)
 {
 	return obj.findCodeSymbolByAddr(addr, name);
 }
 
-//
-//
-//
+// load an executable file into ROM/RAM
 void Cisc::load(const std::string &filename)
 {
 	printf("Loading file: %s\n", filename.c_str());
@@ -1058,12 +1053,15 @@ uint8_t Cisc::exec()
 // update a single CPU instruction clock tick
 uint8_t Cisc::tick()
 {
-	timer++;
+	// timer increments only if enabled
+	if (ram[MMIO_TIMER_ENA])
+	{
+		ram[MMIO_TIMER_REG]++;
 
-	// check for timer interrupts
-	// TODO - allow freq to be set in reg/memory?
-	if (255 == timer)
-		interrupt(INT_VECTOR);
+		// check for timer interrupts
+		if (ram[MMIO_TIMER_LIM] == ram[MMIO_TIMER_REG])
+			interrupt(INT_VECTOR);
+	}
 
 	opcode = fetch();
 

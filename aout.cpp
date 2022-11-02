@@ -459,12 +459,12 @@ int ObjectFile::readFile(FILE *fptr)
 		auto r1 = symbolLookup.insert(SymbolLookup::value_type(pStr, i));
 		assert(r1.second);
 
-		if (sym.type == SET_TEXT)
+		if (sym.type & SET_TEXT)
 		{
 			auto result = codeSymbolRLookup.insert(CodeSymbolRLookup::value_type(sym.value, pStr));
 			assert(result.second);
 		}
-		else if (sym.type == SET_DATA || sym.type == SET_BSS)
+		else if (sym.type & SET_DATA || sym.type & SET_BSS)
 		{
 			auto result = dataSymbolRLookup.insert(DataSymbolRLookup::value_type(sym.value, pStr));
 			assert(result.second);
@@ -522,12 +522,12 @@ void ObjectFile::addSymbol(const std::string &name, SymbolEntity &sym)
 	symbolTable.push_back(SymbolTable::value_type(name, sym));
 	symbolLookup.insert(SymbolLookup::value_type(name, index));
 
-	if (sym.type == SET_TEXT)
+	if (sym.type & SET_TEXT)
 		codeSymbolRLookup.insert(CodeSymbolRLookup::value_type(sym.value, name));
-	else if (sym.type == SET_DATA || sym.type == SET_BSS)
+	else if (sym.type & SET_DATA || sym.type & SET_BSS)
 		dataSymbolRLookup.insert(DataSymbolRLookup::value_type(sym.value, name));
-	else
-		assert(false);
+	//else
+	//	assert(false);
 }
 
 //

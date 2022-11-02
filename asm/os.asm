@@ -14,19 +14,18 @@ INCLUDE "io.inc"
 ;
 ; TCB structure - 12 bytes total
 ;   0 next ptr
-;   2 CC
-;   3 A
-;   4 Y
-;   6 X
-;   8 SP
+;   2 SP
+;   4 CC
+;   5 A
+;   6 Y
+;   8 X
 ;   10 PC
 ;==========================================
 
-;
 TCB_SIZE        EQU 12
-TCB_REG_SIZE    EQU 10
+TCB_REG_SIZE    EQU 8
 STACK_SIZE      EQU 127
-TCB_SP_OFFSET   EQU 8
+TCB_SP_OFFSET   EQU 2
 TCB_PC_OFFSET   EQU 10
 
 ;==========================================
@@ -41,24 +40,17 @@ task_msg    DS "New task created, TCB is at: 0x"
 ; Update our timer tick count
 ;=======================================
 PROC timerIntHandler
-;    LDX [systick]   ; get current tick count
-;    LEAX 1          ; increment it
-;    STX systick     ; save it
-
     CALL _os_schedule       ; schedule the next runnable task
-
-;    BRK
 
     RTI
 
 ;==========================================
 ; Idle task
+; TODO - count idle cycles?
 ;==========================================
 PROC idleTask
 
 idle_top:
-    ; TODO - count idle cycles?
-
     LDA 'I'
     CALL putc
 
@@ -80,22 +72,27 @@ PROC _os_schedule
 
     PUSH SP                 ; get current SP in X
     POP X
-    LEAX 6                  ; adjust for PC and local pushes
+    LEAX 6                  ; adjust for caller PC and local pushes
     CALL os_getContext      ; save its stack to the TCB
 
+    LDY [current]           ; get ptr to current task TCB
     LYY                     ; get ptr to next task in the runnable queue
     JNE os_schedule1        ; if ptr is valid continue
+
     LDY [runnable]          ; otherwise start at head of queue
 
 os_schedule1:
     STY current             ; make next task TCB the current
 
-    PUSH X                  ; get SP in Y
+    PUSH X                  ; get old task SP in Y
     POP Y
-    LDX [current]           ; get the new task TCP in X
+    LDX [current]           ; get the new task TCB in X
+    LEAX TCB_SP_OFFSET      ; get ptr to new task SP in TCB
+    LXX                     ; get the new task SP
+    STXY                    ; store the SP at bottom of interrupt return frame
 
     ; restore its context
-    CALL os_setContext
+;    CALL os_setContext
 
     ; return to the new task    
     POP X, Y
@@ -109,13 +106,13 @@ os_schedule1:
 ; Return: none
 ;=====================================================================
 PROC os_getContext
-    PUSH X, Y           ; save X and Y
+    PUSH A, X, Y        ; save A, X and Y
     LEAY 2              ; advance Y to point to registers in TCB
 
     LDA TCB_REG_SIZE    ; 10 bytes of registers
     CALL rtlMemcpy      ; copy from stack to TCB
 
-    POP X, Y            ; restore X, Y and return
+    POP A, X, Y         ; restore A, X, Y and return
     RET
 
 ;================================================================
@@ -124,24 +121,13 @@ PROC os_getContext
 ; Input: X points to source TCB, Y points to registers on stack
 ;================================================================
 PROC os_setContext
-    PUSH X, Y           ; save X and Y
+    PUSH A, X, Y        ; save A, X and Y
     LEAX 2              ; advance X to point to registers in TCB
 
     LDA TCB_REG_SIZE    ; 10 bytes of registers
     CALL rtlMemcpy      ; copy from TCB to stack
 
-    LEAY 6              ; point Y to SP on stack
-    PUSH Y              ; save Y
-    LYY                 ; get saved SP
-    LEAY -2             ; adjust stack value to make room for the PC
-    POP X               ; get saved ptr to the stacked SP
-    STYX                ; update the stacked SP
-
-    LEAX 2              ; point X to saved PC
-    LXX                 ; get the saved PC
-    STXY                ; put saved PC on the new stack
-
-    POP X, Y            ; restore X, Y and return
+    POP A, X, Y            ; restore X, Y and return
     RET
 
 ;==========================================
@@ -165,6 +151,8 @@ PROC os_startScheduler
     ; don't bother to save Y because we never return to the caller!
     ;
 
+; TODO - check if we are called twice?! Just return if so
+
     ; setup timer interrupt handler
     LDX timerIntHandler         ; note this is a CODE PTR!
     STX int_vector
@@ -178,10 +166,17 @@ PROC os_startScheduler
     LDX [runnable]              ; make the first runnable task the current
     STX current
 
-    ; setup stack for the current task
-    PUSH SP                     ; get SP in Y
+    ; setup stack for the first (current) task
+    PUSH X                      ; get task TCB ptr in Y
     POP Y
-    CALL os_setContext
+    LEAY TCB_SP_OFFSET          ; point to the new task SP
+    LYY                         ; get the new task SP
+
+    LEAY -2
+    CALL os_setContext          ; setup context on the first task stack
+
+    PUSH Y                      ; put new task SP on bottom of stack
+    POP SP
 
     RTI                         ; fake a return from interrupt
 
@@ -202,48 +197,42 @@ PROC os_createTask
     CALL rtlMalloc          ; allocate a new TCB
     JEQ os_createTask_done  ; check for malloc fail
 
-    CALL rtlZeroMemory      ; zero the TCB
+    CALL rtlZeroMemory      ; zero the TCB block
 
     ; add task to runnable queue
     PUSH Y                  ; save Y (task PC) on stack
     LDY [runnable]          ; get ptr to next task on runnable queue
     STX runnable            ; make new task the head of runnable queue
-    PUSH Y                  ; save next ptr to stack
-
-    POP A                   ; get lobyte of next ptr
-    STAX                    ; store it in TCB next
-
-    LEAX 1                  ; point to TCB next + 1
-    POP A                   ; get hibyte of next ptr
-    STAX                    ; store it in TCB next + 1
+    STYX                    ; save ptr to former head of queue to new task next
 
     ;
     ; setup new task PC and SP in the TCB
     ;
-    LEAX 7                  ; point to lobyte of task SP
+    LEAX TCB_PC_OFFSET      ; point to task PC in TCB
+    POP Y                   ; restore task PC
+    PUSH Y                  ; but keep a copy on the stack for later
+    STYX                    ; store it in TCB PC
 
-    PUSH X                  ; save X
+    LDX [runnable]
+    LEAX TCB_SP_OFFSET      ; point to task SP in TCB
+    PUSH X                  ; save ptr to task SP in TCB
+    POP Y                   ; and move it to Y
+
     LDA STACK_SIZE          ; size of stack to allocate
-    CALL rtlMalloc          ; allocate new stack
-    PUSH X                  ; move new stack ptr in X to Y
-    POP Y
-    AAY                     ; Y + A is top of stack
-    LEAY -1
-    POP X                   ; restore X
+    CALL rtlMalloc          ; allocate new stack, returned in X
+    CALL rtlZeroMemory      ; zero the stack memory
 
-    PUSH Y                  ; save new task SP
-    POP A                   ; get lobyte of task SP
-    STAX                    ; store it
-    LEAX 1                  ; point to hibyte of task SP
-    POP A                   ; get hibyte of task SP
-    STAX                    ; store it
+    SUB 1                   ; X + A - 1 is top of stack
+    AAX                 
+    LEAX -8                ; adjust for registers that will be saved on stack
+    STXY                    ; save task SP to TCB
 
-    LEAX 1                  ; point to the TCB PC
-    POP A                   ; get lobyte of task PC
-    STAX                    ; store it
-    LEAX 1                  ; point to TCB PC + 1
-    POP A                   ; get hibyte of task PC
-    STAX                    ; store it
+    ;
+    ; setup new task stack with PC
+    ;
+    LEAX 6                  ; point to PC in the new stack
+    POP Y                   ; get task PC from earlier
+    STYX                    ; store task PC in the new stack
 
 os_createTask_done:
     LDX task_msg            ; print new task info

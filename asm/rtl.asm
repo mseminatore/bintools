@@ -186,7 +186,8 @@ PROC rtlMalloc
     AAX                 ; increment heap pointer by block size
     STX heapPointer     ; save the new heap location
 
-    POP X, PC           ; restore X and return
+    POP X               ; restore X and return
+    RET
 
 malloc_fail:
     PUSH A

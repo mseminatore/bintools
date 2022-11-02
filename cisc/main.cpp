@@ -1112,10 +1112,6 @@ void Cisc::pushAll()
 	push(HIBYTE(PC));
 	push(LOBYTE(PC));
 
-	auto addr = SP;
-	push(HIBYTE(addr));
-	push(LOBYTE(addr));
-
 	push(HIBYTE(X));
 	push(LOBYTE(X));
 
@@ -1125,11 +1121,17 @@ void Cisc::pushAll()
 	push(A);
 
 	push(CC);
+
+	auto addr = SP;
+	push(HIBYTE(addr));
+	push(LOBYTE(addr));
 }
 
 // pop all registers from the stack
 void Cisc::popAll()
 {
+	SP = pop() | (pop() << 8);
+
 	CC = pop();
 
 	A = pop();
@@ -1137,7 +1139,6 @@ void Cisc::popAll()
 	Y = pop() | (pop() << 8);
 	X = pop() | (pop() << 8);
 
-	SP = pop() | (pop() << 8);
 	PC = pop() | (pop() << 8);
 }
 

@@ -13,6 +13,10 @@ int_vector      EQU 0xFFFC
 swi_vector      EQU 0xFFFA
 brk_vector      EQU 0xFFF8
 
+MMIO_TIMER_REG	EQU 0xFF00	; current value of timer
+MMIO_TIMER_ENA	EQU 0xFF01	; timer enabled/disabled
+MMIO_TIMER_LIM	EQU 0xFF02	; timer limit
+
 NULL    EQU 0
 TRUE    EQU 1
 FALSE   EQU 0

@@ -647,8 +647,10 @@ void AsmParser::imm16(int op)
 			bSegmentRelative = true;
 
 		// handle undefined symbols
-		if (yylval.sym->type == stUndef)
-			yyerror("undefined symbol '%s'", yylval.sym->lexeme.c_str());
+		//if (yylval.sym->type == stUndef)
+		//{
+		//	yyerror("undefined symbol '%s'", yylval.sym->lexeme.c_str());
+		//}
 	}
 	else
 	{
@@ -657,6 +659,10 @@ void AsmParser::imm16(int op)
 
 	auto addr = obj.addText(LOBYTE(val));
 	obj.addText(HIBYTE(val));
+
+	// see if we have to fixup a forward address
+	if (yylval.sym->type == stUndef)
+		addFixup(yylval.sym->lexeme, addr);
 
 	// if this is a data address it needs a relocation entry
 	if (bSegmentRelative)

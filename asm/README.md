@@ -2,6 +2,12 @@
 
 The bintools assembler.
 
+## Dependencies
+
+The assembler makes use of my [ParserKit](https://github.com/mseminatore/ParserKit)
+library which is linked as a git submodule. If you clone this repository be sure to
+_git submodule update --remote_ to get the required source code.
+
 ## Assembly language instructions
 
 You can find a complete list of available instructions 
@@ -121,6 +127,18 @@ from the stack in single instructions. The order of registers is pre-determined
 for consistency. Doing this avoids the need for an explicit `RET` instruction 
 saving one byte of code. This is a common pattern in the libraries I've 
 written.
+
+## Assembly libraries
+
+In the course of testing I've written a few small example libraries
+
+File | Description
+---- | -----------
+main.asm | small demo example
+string.asm | string routines
+rtl.asm | memory management and interrupt routines
+io.asm | basic console input/output routines
+os.asm | a minimal set of pre-emptive multi-tasking routines
 
 ## Assembler directives
 

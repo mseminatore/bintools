@@ -14,7 +14,6 @@
 #define TSTF(flag) ((CC & flag) != 0)
 
 //
-//bool singleStep = true;
 static const int SMALL_BUFFER = 256;
 
 // define our CPU arch
@@ -34,9 +33,6 @@ protected:
 	// processor state
 	uint16_t maxStack;
 	uint16_t __brk;
-
-	// 8-bit timer register
-	uint8_t timer;
 
 	// instruction buffer
 	uint8_t opcode;
@@ -72,7 +68,9 @@ public:
 		SP = RAM_END;
 
 		maxStack = SP;
-		timer = 0;
+		ram[MMIO_TIMER_REG] = 0;
+		ram[MMIO_TIMER_ENA] = 0;
+		ram[MMIO_TIMER_LIM] = 0;
 	}
 
 	uint32_t checkOverflow(uint16_t val);
@@ -102,7 +100,7 @@ public:
 	// breakpoints
 	uint16_t getPC() const { return PC; }
 	bool getSymbolAddress(const std::string &name, uint16_t &addr);
-	bool getSymbolName(uint16_t addr, std::string &name);
+	bool getCodeSymbolName(uint16_t addr, std::string &name);
 	void addBreakpoint(uint16_t addr) { breakpoints.insert(addr); }
 
 	void clearAllBreakpoints() { breakpoints.clear(); }
@@ -113,7 +111,7 @@ public:
 		if (getSymbolAddress(name, addr))
 		{
 			breakpoints.erase(addr);
-			log("removed breakpoint @ %s (0x%04X)", name.c_str(), addr);
+			log("breakpoint deleted @ %s (0x%04X)", name.c_str(), addr);
 
 			return true;
 		}
@@ -177,8 +175,13 @@ public:
 		std::string name;
 		uint16_t addr;
 
-		if (obj.findNearestSymbolToAddr(PC, name, addr))
-			log("stopped @ %s + %d", name.c_str(), PC - addr);
+		if (obj.findNearestCodeSymbolToAddr(PC, name, addr))
+		{
+			if (PC > addr)
+				log("stopped @ %s + %d (0x%04X)", name.c_str(), PC - addr, PC);
+			else
+				log("stopped @ %s (0x%04X)", name.c_str(), PC);
+		}
 		else
 			log("stopped @ 0x%X", PC);
 	}
@@ -186,24 +189,20 @@ public:
 
 Cisc cpu;
 
-//
-//
-//
+// print out all current breakpoints
 void Cisc::listBreakpoints()
 {
 	std::string name;
 
 	for (auto it = breakpoints.begin(); it != breakpoints.end(); it++)
 	{
-		if (getSymbolName(*it, name))
+		if (getCodeSymbolName(*it, name))
 			printf("breakpoint @ %s (0x%04X)\n", name.c_str(), *it);
 		else
 			printf("breakpoint @ 0x%04X\n", *it);
 	}
 }
 
-//
-//
 //
 bool Cisc::getSymbolAddress(const std::string &name, uint16_t &addr)
 {
@@ -217,16 +216,12 @@ bool Cisc::getSymbolAddress(const std::string &name, uint16_t &addr)
 }
 
 //
-//
-//
-bool Cisc::getSymbolName(uint16_t addr, std::string &name)
+bool Cisc::getCodeSymbolName(uint16_t addr, std::string &name)
 {
-	return obj.findSymbolByAddr(addr, name);
+	return obj.findCodeSymbolByAddr(addr, name);
 }
 
-//
-//
-//
+// load an executable file into ROM/RAM
 void Cisc::load(const std::string &filename)
 {
 	printf("Loading file: %s\n", filename.c_str());
@@ -296,7 +291,7 @@ void Cisc::getRegisterList(uint8_t operand, std::string &str)
 //
 void Cisc::log(const char *fmt, ...)
 {
-	if (!TSTF(FLAG_S) /*singleStep*/)
+	if (!TSTF(FLAG_S))
 		return;
 
 	char buf[SMALL_BUFFER];
@@ -509,7 +504,7 @@ uint8_t Cisc::exec()
 
 		A = temp16 & 0xFF;
 
-		if (obj.findSymbolByAddr(addr, name))
+		if (obj.findDataSymbolByAddr(addr, name))
 			log("ADD [%s]", name.c_str());
 		else
 			log("ADD [0x%X]", addr);
@@ -540,7 +535,7 @@ uint8_t Cisc::exec()
 
 		A = temp16 & 0xFF;
 
-		if (obj.findSymbolByAddr(addr, name))
+		if (obj.findDataSymbolByAddr(addr, name))
 			log("ADC [%s]", name.c_str());
 		else
 			log("ADC [0x%X]", addr);
@@ -583,7 +578,7 @@ uint8_t Cisc::exec()
 
 		// Note: we discard the result!
 
-		if (obj.findSymbolByAddr(addr, name))
+		if (obj.findDataSymbolByAddr(addr, name))
 			log("CMP [%s]", name.c_str());
 		else
 			log("CMP [0x%X]", addr);
@@ -614,7 +609,7 @@ uint8_t Cisc::exec()
 
 		A = temp16 & 0xFF;
 
-		if (obj.findSymbolByAddr(addr, name))
+		if (obj.findDataSymbolByAddr(addr, name))
 			log("SUB [%s]", name.c_str());
 		else
 			log("SUB [0x%X]", addr);
@@ -645,7 +640,7 @@ uint8_t Cisc::exec()
 
 		A = temp16 & 0xFF;
 
-		if (obj.findSymbolByAddr(addr, name))
+		if (obj.findDataSymbolByAddr(addr, name))
 			log("SBB [%s]", name.c_str());
 		else
 			log("SBB [0x%X]", addr);
@@ -673,7 +668,7 @@ uint8_t Cisc::exec()
 		updateFlag(A & 0x80, FLAG_N);
 		updateFlag(0, FLAG_V);
 
-		if (obj.findSymbolByAddr(addr, name))
+		if (obj.findDataSymbolByAddr(addr, name))
 			log("AND [%s]", name.c_str());
 		else
 			log("AND [0x%X]", addr);
@@ -698,7 +693,7 @@ uint8_t Cisc::exec()
 		updateFlag(A & 0x80, FLAG_N);
 		updateFlag(0, FLAG_V);
 
-		if (obj.findSymbolByAddr(addr, name))
+		if (obj.findDataSymbolByAddr(addr, name))
 			log("OR [%s]", name.c_str());
 		else
 			log("OR [0x%X]", addr);
@@ -723,7 +718,7 @@ uint8_t Cisc::exec()
 		updateFlag(A & 0x80, FLAG_N);
 		updateFlag(0, FLAG_V);
 
-		if (obj.findSymbolByAddr(addr, name))
+		if (obj.findDataSymbolByAddr(addr, name))
 			log("XOR [%s]", name.c_str());
 		else
 			log("XOR [0x%X]", addr);
@@ -760,9 +755,7 @@ uint8_t Cisc::exec()
 
 		PC = addr;
 
-		obj.findSymbolByAddr(PC, name);
-
-		if (obj.findSymbolByAddr(addr, name))
+		if (obj.findCodeSymbolByAddr(addr, name))
 			log("CALL %s", name.c_str());
 		else
 			log("CALL %s (0x%X)", name.c_str(), PC);
@@ -783,7 +776,7 @@ uint8_t Cisc::exec()
 	case OP_JMP:
 		PC = fetchW();
 
-		if (obj.findSymbolByAddr(PC, name))
+		if (obj.findCodeSymbolByAddr(PC, name))
 			log("JMP %s", name.c_str());
 		else
 			log("JMP 0x%X", PC);
@@ -794,7 +787,7 @@ uint8_t Cisc::exec()
 		if (!TSTF(FLAG_Z))
 			PC = addr;
 
-		if (obj.findSymbolByAddr(addr, name))
+		if (obj.findCodeSymbolByAddr(addr, name))
 			log("JNE %s", name.c_str());
 		else
 			log("JNE 0x%X", addr);
@@ -805,7 +798,7 @@ uint8_t Cisc::exec()
 		if (TSTF(FLAG_Z))
 			PC = addr;
 
-		if (obj.findSymbolByAddr(addr, name))
+		if (obj.findCodeSymbolByAddr(addr, name))
 			log("JEQ %s", name.c_str());
 		else
 			log("JEQ 0x%X", addr);
@@ -816,7 +809,7 @@ uint8_t Cisc::exec()
 		if (!TSTF(FLAG_Z) && ( (TSTF(FLAG_N) && TSTF(FLAG_V)) || (!TSTF(FLAG_N) && !TSTF(FLAG_V)) ) )
 			PC = addr;
 
-		if (obj.findSymbolByAddr(addr, name))
+		if (obj.findCodeSymbolByAddr(addr, name))
 			log("JGT %s", name.c_str());
 		else
 			log("JGT 0x%X", addr);
@@ -827,7 +820,7 @@ uint8_t Cisc::exec()
 		if ( (TSTF(FLAG_N) || TSTF(FLAG_V)) && !(TSTF(FLAG_N) && TSTF(FLAG_V)) )
 			PC = addr;
 
-		if (obj.findSymbolByAddr(addr, name))
+		if (obj.findCodeSymbolByAddr(addr, name))
 			log("JLT %s", name.c_str());
 		else
 			log("JLT 0x%X", addr);
@@ -861,7 +854,7 @@ uint8_t Cisc::exec()
 		updateFlag(A & 0x80, FLAG_N);
 		updateFlag(0, FLAG_V);
 
-		if (obj.findSymbolByAddr(addr, name))
+		if (obj.findDataSymbolByAddr(addr, name))
 			log("LDA [%s]", name.c_str());
 		else
 			log("LDA [0x%X]", addr);
@@ -886,7 +879,7 @@ uint8_t Cisc::exec()
 		updateFlag(X & 0x8000, FLAG_N);
 		updateFlag(0, FLAG_V);
 
-		if (obj.findSymbolByAddr(addr, name))
+		if (obj.findDataSymbolByAddr(addr, name))
 			log("LDX [%s]", name.c_str());
 		else
 			log("LDX [0x%X]", addr);
@@ -910,7 +903,7 @@ uint8_t Cisc::exec()
 		updateFlag(Y & 0x8000, FLAG_N);
 		updateFlag(0, FLAG_V);
 
-		if (obj.findSymbolByAddr(addr, name))
+		if (obj.findDataSymbolByAddr(addr, name))
 			log("LDY [%s]", name.c_str());
 		else
 			log("LDY [0x%X]", addr);
@@ -931,8 +924,6 @@ uint8_t Cisc::exec()
 		X = (int)X + (char)operand;
 
 		updateFlag(X == 0, FLAG_Z);
-		//updateFlag(X & 0x8000, FLAG_N);
-		//updateFlag(0, FLAG_V);
 
 		log("LEAX %d", (char)operand);
 		break;
@@ -942,8 +933,6 @@ uint8_t Cisc::exec()
 		Y = (int)Y + (char)operand;
 
 		updateFlag(Y == 0, FLAG_Z);
-		//updateFlag(Y & 0x8000, FLAG_N);
-		//updateFlag(0, FLAG_V);
 
 		log("LEAY %d", (char)operand);
 		break;
@@ -972,9 +961,7 @@ uint8_t Cisc::exec()
 		addr = fetchW();
 		ram[addr] = A;
 
-		obj.findSymbolByAddr(addr, name);
-
-		if (obj.findSymbolByAddr(addr, name))
+		if (obj.findDataSymbolByAddr(addr, name))
 			log("STA %s", name.c_str());
 		else
 			log("STA 0x%X", addr);
@@ -985,9 +972,7 @@ uint8_t Cisc::exec()
 		ram[addr] = LOBYTE(X);
 		ram[addr + 1] = HIBYTE(X);
 
-		obj.findSymbolByAddr(addr, name);
-
-		if (obj.findSymbolByAddr(addr, name))
+		if (obj.findDataSymbolByAddr(addr, name))
 			log("STX %s", name.c_str());
 		else
 			log("STX 0x%X", addr);
@@ -998,9 +983,7 @@ uint8_t Cisc::exec()
 		ram[addr] = LOBYTE(Y);
 		ram[addr + 1] = HIBYTE(Y);
 
-		obj.findSymbolByAddr(addr, name);
-
-		if (obj.findSymbolByAddr(addr, name))
+		if (obj.findDataSymbolByAddr(addr, name))
 			log("STY %s", name.c_str());
 		else
 			log("STY 0x%X", addr);
@@ -1070,12 +1053,15 @@ uint8_t Cisc::exec()
 // update a single CPU instruction clock tick
 uint8_t Cisc::tick()
 {
-	timer++;
+	// timer increments only if enabled
+	if (ram[MMIO_TIMER_ENA])
+	{
+		ram[MMIO_TIMER_REG]++;
 
-	// check for timer interrupts
-	// TODO - allow freq to be set in reg/memory?
-	if (255 == timer)
-		interrupt(INT_VECTOR);
+		// check for timer interrupts
+		if (ram[MMIO_TIMER_LIM] == ram[MMIO_TIMER_REG])
+			interrupt(INT_VECTOR);
+	}
 
 	opcode = fetch();
 
@@ -1153,7 +1139,7 @@ void Cisc::interrupt(uint32_t vector)
 	pushAll();
 
 	// set interrupt flag to disable interrupts
-//	if (vector == INT_VECTOR)
+//	if (vector == INT_VECTOR)	
 		SETF(FLAG_I);
 
 	// jump to the interrupt vector
@@ -1258,7 +1244,7 @@ int main(int argc, char* argv[])
 
 	while (!done)
 	{
-		if (FLAG_S & cpu.getCC() /*singleStep*/)
+		if (FLAG_S & cpu.getCC())
 		{
 			cpu.reportLocation();
 
@@ -1276,7 +1262,6 @@ int main(int argc, char* argv[])
 			else if (!strcmp(pToken, "g"))			// go, run program
 			{
 				cpu.setCC(cpu.getCC() & ~FLAG_S);
-				//singleStep = false;
 				cpu.tick();
 			}
 			else if (!strcmp(pToken, "n"))			// step over
@@ -1287,14 +1272,12 @@ int main(int argc, char* argv[])
 			else if (!strcmp(pToken, "fi"))			// finish current function
 			{
 				cpu.setCC(cpu.getCC() & ~FLAG_S);
-				//singleStep = false;
 
 				while (OP_RET != cpu.tick());
 
 				cpu.setCC(cpu.getCC() | FLAG_S);
-				//singleStep = true;
 			}
-			else if (!strcmp(pToken, "m"))
+			else if (!strcmp(pToken, "m"))			// dump memory
 			{
 				auto tok = strtok(nullptr, " \n");
 				
@@ -1358,7 +1341,7 @@ int main(int argc, char* argv[])
 						tok++;
 					}
 
-					if (isdigit(tok[0]))
+					if (isxdigit(tok[0]))
 						addr = (uint16_t)strtoul(tok, nullptr, base);
 					else
 						cpu.getSymbolAddress(tok, addr);
@@ -1369,18 +1352,17 @@ int main(int argc, char* argv[])
 		}
 		else
 		{
-			while (!(FLAG_S & cpu.getCC()) /*singleStep*/)
+			while (!(FLAG_S & cpu.getCC()))
 			{ 
 				auto pc = cpu.getPC();
 				if (cpu.isBreakpoint(pc))
 				{
 					std::string name;
 
-					cpu.getSymbolName(pc, name);
+					cpu.getCodeSymbolName(pc, name);
 					fprintf(stdout, "breakpoint hit @ %s (0x%04X)\n", name.c_str(), pc);
 
 					cpu.setCC(cpu.getCC() | FLAG_S);
-					//singleStep = true;
 				}
 				else
 					cpu.tick();

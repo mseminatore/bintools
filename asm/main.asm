@@ -71,9 +71,6 @@ done:
 PROC task
 
 task_top:
-;    LDX source
-;    CALL puts
-
     LDA '.'
     CALL putc
 
@@ -81,7 +78,6 @@ task_top:
 
 ; !! task never gets here!!    
     RET
-
 
 ;==========================================
 ;

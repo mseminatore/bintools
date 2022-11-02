@@ -48,7 +48,8 @@ strcpy_start:
     STAY                ; copy it to s2
     LEAX 1              ; inc X
     LEAY 1              ; inc Y
-    JEQ strcpy_start    ; null char?
+    CMP 0
+    JNE strcpy_start    ; null char?
 
     POP A, X, Y, PC     ; restore A, X, Y and return
 

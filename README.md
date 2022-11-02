@@ -12,7 +12,7 @@ until the 1.2 kernel.
 > "assembler output" and was the defalt output filename from Ken Thompson's 
 > PDP-7 assembler.
 
-The bintools project is build regularly on Windows using Visual Studio as well
+The bintools project is built regularly on Windows using Visual Studio as well
 as Mac OSX using Clang.
 
 ## Why bintools?

@@ -32,6 +32,8 @@ code:
 	../ln/ln -o ../ln/a.out main.o rtl.o string.o io.o os.o
 
 clean:
-	rm -f $(OBJS) $(TARGET)
-	
+	rm -f $(OBJS) $(TARGET) *.o
+
+all: $(TARGET) code
+
 

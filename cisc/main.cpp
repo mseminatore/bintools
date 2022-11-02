@@ -14,7 +14,6 @@
 #define TSTF(flag) ((CC & flag) != 0)
 
 //
-//bool singleStep = true;
 static const int SMALL_BUFFER = 256;
 
 // define our CPU arch
@@ -113,7 +112,7 @@ public:
 		if (getSymbolAddress(name, addr))
 		{
 			breakpoints.erase(addr);
-			log("removed breakpoint @ %s (0x%04X)", name.c_str(), addr);
+			log("breakpoint deleted @ %s (0x%04X)", name.c_str(), addr);
 
 			return true;
 		}
@@ -296,7 +295,7 @@ void Cisc::getRegisterList(uint8_t operand, std::string &str)
 //
 void Cisc::log(const char *fmt, ...)
 {
-	if (!TSTF(FLAG_S) /*singleStep*/)
+	if (!TSTF(FLAG_S))
 		return;
 
 	char buf[SMALL_BUFFER];
@@ -1146,14 +1145,15 @@ void Cisc::popAll()
 void Cisc::interrupt(uint32_t vector)
 {
 	// no re-entrant interrupts by default
-	if (/ *vector == INT_VECTOR && */ TSTF(FLAG_I))
+	if (vector == INT_VECTOR && TSTF(FLAG_I))
 		return;
 
 	// save the current context
 	pushAll();
 
 	// set interrupt flag to disable interrupts
-	SETF(FLAG_I);
+//	if (vector == INT_VECTOR)	
+		SETF(FLAG_I);
 
 	// jump to the interrupt vector
 	PC = ram[vector] + (ram[vector + 1] << 8);
@@ -1257,7 +1257,7 @@ int main(int argc, char* argv[])
 
 	while (!done)
 	{
-		if (FLAG_S & cpu.getCC() /*singleStep*/)
+		if (FLAG_S & cpu.getCC())
 		{
 			cpu.reportLocation();
 
@@ -1275,7 +1275,6 @@ int main(int argc, char* argv[])
 			else if (!strcmp(pToken, "g"))			// go, run program
 			{
 				cpu.setCC(cpu.getCC() & ~FLAG_S);
-				//singleStep = false;
 				cpu.tick();
 			}
 			else if (!strcmp(pToken, "n"))			// step over
@@ -1286,14 +1285,12 @@ int main(int argc, char* argv[])
 			else if (!strcmp(pToken, "fi"))			// finish current function
 			{
 				cpu.setCC(cpu.getCC() & ~FLAG_S);
-				//singleStep = false;
 
 				while (OP_RET != cpu.tick());
 
 				cpu.setCC(cpu.getCC() | FLAG_S);
-				//singleStep = true;
 			}
-			else if (!strcmp(pToken, "m"))
+			else if (!strcmp(pToken, "m"))			// dump memory
 			{
 				auto tok = strtok(nullptr, " \n");
 				
@@ -1357,7 +1354,7 @@ int main(int argc, char* argv[])
 						tok++;
 					}
 
-					if (isdigit(tok[0]))
+					if (isxdigit(tok[0]))
 						addr = (uint16_t)strtoul(tok, nullptr, base);
 					else
 						cpu.getSymbolAddress(tok, addr);
@@ -1368,7 +1365,7 @@ int main(int argc, char* argv[])
 		}
 		else
 		{
-			while (!(FLAG_S & cpu.getCC()) /*singleStep*/)
+			while (!(FLAG_S & cpu.getCC()))
 			{ 
 				auto pc = cpu.getPC();
 				if (cpu.isBreakpoint(pc))
@@ -1379,7 +1376,6 @@ int main(int argc, char* argv[])
 					fprintf(stdout, "breakpoint hit @ %s (0x%04X)\n", name.c_str(), pc);
 
 					cpu.setCC(cpu.getCC() | FLAG_S);
-					//singleStep = true;
 				}
 				else
 					cpu.tick();

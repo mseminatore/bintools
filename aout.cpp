@@ -31,7 +31,8 @@ void ObjectFile::clear()
 
 	symbolTable.clear();
 	symbolLookup.clear();
-	symbolRLookup.clear();
+	codeSymbolRLookup.clear();
+	dataSymbolRLookup.clear();
 
 	stringTable.clear();
 
@@ -57,12 +58,12 @@ bool ObjectFile::findSymbol(const std::string &name, SymbolEntity &sym)
 	return false;
 }
 
-// find a symbol by address
-bool ObjectFile::findSymbolByAddr(uint16_t addr, std::string &name)
+// find a code symbol by address
+bool ObjectFile::findCodeSymbolByAddr(uint16_t addr, std::string &name)
 {
 	name = "<none>";
-	auto it = symbolRLookup.find(addr);
-	if (it != symbolRLookup.end())
+	auto it = codeSymbolRLookup.find(addr);
+	if (it != codeSymbolRLookup.end())
 	{
 		name = it->second;
 		return true;
@@ -71,22 +72,38 @@ bool ObjectFile::findSymbolByAddr(uint16_t addr, std::string &name)
 	return false;
 }
 
-// find nearst symbol less than given address
-bool ObjectFile::findNearestSymbolToAddr(uint16_t addr, std::string &name, uint16_t &symAddr)
+// find a data symbol by address
+bool ObjectFile::findDataSymbolByAddr(uint16_t addr, std::string &name)
 {
+	name = "<none>";
+	auto it = dataSymbolRLookup.find(addr);
+	if (it != dataSymbolRLookup.end())
+	{
+		name = it->second;
+		return true;
+	}
+
 	return false;
+}
 
-	//auto it = symbolRLookup.begin();
-	//for (; it->first <= addr && it != symbolRLookup.end(); it++)
-	//	;
+// find nearst code symbol less than given address
+bool ObjectFile::findNearestCodeSymbolToAddr(uint16_t addr, std::string &name, uint16_t &symAddr)
+{
+	auto it = codeSymbolRLookup.begin();
+	for (; it->first < addr && it != codeSymbolRLookup.end(); it++)
+		;
 
-	//if (it == symbolRLookup.end())
-	//	return false;
+	// fixup if we went beyond
+	if (it->first > addr)
+		it--;
 
-	//symAddr = (uint16_t)it->first;
-	//name = it->second;
+	if (it == codeSymbolRLookup.end())
+		return false;
 
-	//return true;
+	symAddr = (uint16_t)it->first;
+	name = it->second;
+
+	return true;
 }
 
 //
@@ -440,10 +457,20 @@ int ObjectFile::readFile(FILE *fptr)
 		symbolTable.push_back(SymbolTable::value_type(pStr, sym));
 
 		auto r1 = symbolLookup.insert(SymbolLookup::value_type(pStr, i));
-//		assert(r1.second);
+		assert(r1.second);
 
-		auto r2 = symbolRLookup.insert(SymbolRLookup::value_type(sym.value, pStr));
-//		assert(r2.second);
+		if (sym.type == SET_TEXT)
+		{
+			auto result = codeSymbolRLookup.insert(CodeSymbolRLookup::value_type(sym.value, pStr));
+			assert(result.second);
+		}
+		else if (sym.type == SET_DATA || sym.type == SET_BSS)
+		{
+			auto result = dataSymbolRLookup.insert(DataSymbolRLookup::value_type(sym.value, pStr));
+			assert(result.second);
+		}
+		else
+			assert(false);
 	}
 
 	return 0;
@@ -494,7 +521,13 @@ void ObjectFile::addSymbol(const std::string &name, SymbolEntity &sym)
 
 	symbolTable.push_back(SymbolTable::value_type(name, sym));
 	symbolLookup.insert(SymbolLookup::value_type(name, index));
-	symbolRLookup.insert(SymbolRLookup::value_type(sym.value, name));
+
+	if (sym.type == SET_TEXT)
+		codeSymbolRLookup.insert(CodeSymbolRLookup::value_type(sym.value, name));
+	else if (sym.type == SET_DATA || sym.type == SET_BSS)
+		dataSymbolRLookup.insert(DataSymbolRLookup::value_type(sym.value, name));
+	else
+		assert(false);
 }
 
 //

@@ -106,11 +106,13 @@ protected:
 	// Make this a vector with a map of name/index pairs for lookup.
 	using SymbolTable = std::vector<std::pair<std::string, SymbolEntity> >;
 	using SymbolLookup = std::map<std::string, size_t>;
-	using SymbolRLookup = std::map<size_t, std::string>;
+	using CodeSymbolRLookup = std::map<size_t, std::string>;
+	using DataSymbolRLookup = std::map<size_t, std::string>;
 
 	SymbolTable symbolTable;
 	SymbolLookup symbolLookup;
-	SymbolRLookup symbolRLookup;
+	CodeSymbolRLookup codeSymbolRLookup;
+	DataSymbolRLookup dataSymbolRLookup;
 
 	using StringTable = std::vector<char>;
 	StringTable stringTable;
@@ -165,8 +167,9 @@ public:
 	size_t indexOfSymbol(const std::string &name);
 	SymbolEntity symbolAt(size_t index);
 	bool findSymbol(const std::string &name, SymbolEntity &sym);
-	bool findSymbolByAddr(uint16_t addr, std::string &name);
-	bool findNearestSymbolToAddr(uint16_t addr, std::string &name, uint16_t &symAddr);
+	bool findCodeSymbolByAddr(uint16_t addr, std::string &name);
+	bool findDataSymbolByAddr(uint16_t addr, std::string &name);
+	bool findNearestCodeSymbolToAddr(uint16_t addr, std::string &name, uint16_t &symAddr);
 
 	// relocations
 	void addTextRelocation(RelocationEntry&);

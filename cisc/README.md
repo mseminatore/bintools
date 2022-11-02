@@ -159,21 +159,26 @@ XOR | logical XOR of A and memory/immediate | ZNV
 
 ## Interrupts
 
-The processor supports interrupts. Interrupts save the current processor state
-and branch to an interrupt handler. Interrupts are vectored through a table at
-the top of RAM. Entering an interrupt sets the `I` or interrupt flag in `CC`.
+The processor supports several types of interrupts. Interrupts save the current
+processor state and branch to an interrupt handler. Interrupts are vectored 
+through a table at the top of RAM. Entering an interrupt sets the `I`  
+interrupt flag in `CC`. When the `I` flag is set, interrupts are masked.
 
-> A new interrupt cannot occur while an interrupt is being serviced so 
+> A new interrupt cannot occur while an interrupt is being serviced. So 
 > interrupt handlers must be short to avoid missing an interrupt.
 
-Interrupt | Vector address
---------- | --------------
-BRK | 0xFFF8
-SWI | 0xFFFA
-Timer | 0xFFFC
-Reset | 0xFFFE
+On an interrupt, the entire processor state is stacked in the following order: PC, 
+X, Y, A, CC, SP. 
 
-On a return from interrupt `RTI` the processor state is restored.
+Interrupt | Vector address | Description
+--------- | -------------- | -----------
+BRK | 0xFFF8 | breakpoint interrupt
+SWI | 0xFFFA | software interrupt
+Timer | 0xFFFC | timer interrupt
+Reset | 0xFFFE | reset vector
+
+On a return from interrupt `RTI` the processor state is restored by popping the
+registers off the stack in the following order: SP, CC, A, Y, X, PC.
 
 ## Memory map
 

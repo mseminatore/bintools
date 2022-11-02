@@ -14,7 +14,7 @@ until the 1.2 kernel.
 
 ## Why bintools?
 
-I'm fascinated by the process of compiling, linking and executing programs. 
+I am fascinated by the process of compiling, linking and executing programs. 
 Linkers had always seemed complex to the point of being a bit magical. While 
 I had previously worked on compilers and interpreters, I had not yet had the 
 opportunity to work directly with object files and linkers.

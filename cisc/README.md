@@ -167,8 +167,8 @@ interrupt flag in `CC`. When the `I` flag is set, interrupts are masked.
 > A new interrupt cannot occur while an interrupt is being serviced. So 
 > interrupt handlers must be short to avoid missing an interrupt.
 
-On an interrupt, the entire processor state is stacked in the following order: PC, 
-X, Y, A, CC, SP. 
+On an interrupt, the entire processor state is stacked in the following order: 
+PC, X, Y, A, CC, SP. 
 
 Interrupt | Vector address | Description
 --------- | -------------- | -----------
@@ -178,7 +178,10 @@ Timer | 0xFFFC | timer interrupt
 Reset | 0xFFFE | reset vector
 
 On a return from interrupt `RTI` the processor state is restored by popping the
-registers off the stack in the following order: SP, CC, A, Y, X, PC.
+registers off the stack in the following order: SP, CC, A, Y, X, PC. 
+
+> Note that the decision to stack the SP last, and unstack it first, makes a
+> context switch much simpler to implement.
 
 ## Memory map
 

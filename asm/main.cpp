@@ -661,7 +661,7 @@ void AsmParser::imm16(int op)
 	obj.addText(HIBYTE(val));
 
 	// see if we have to fixup a forward address
-	if (yylval.sym->type == stUndef)
+	if (lookahead == TV_ID && yylval.sym->type == stUndef)
 		addFixup(yylval.sym->lexeme, addr);
 
 	// if this is a data address it needs a relocation entry

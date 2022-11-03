@@ -114,7 +114,7 @@ int main(int argc, char* argv[])
 	files[0]->setTextBase(g_bBaseAddr);
 
 	// compute code and data segment starts
-	log(LOG_VERBOSE, "Compute data segment starts\n");
+	log(LOG_VERBOSE, "\nCompute data segment starts\n");
 	for (size_t i = 1; i < files.size(); i++)
 	{
 		uint32_t offset;
@@ -164,13 +164,13 @@ int main(int argc, char* argv[])
 	}
 
 	// set the entry point
-	log(LOG_VERBOSE, "Setting entry point to %04X\n", g_bBaseAddr);
+	log(LOG_VERBOSE, "Setting entry point to 0x%04X\n", g_bBaseAddr);
 	files[0]->setEntryPoint(g_bBaseAddr);
 
 	// write the output file
 	files[0]->writeFile(g_szOutputFilename);
 
-	log(LOG_ALWAYS, "Linking complete -> %s\n\n", g_szOutputFilename);
+	log(LOG_ALWAYS, "\nLinking complete -> %s\n\n", g_szOutputFilename);
 
 	if (g_bDebug)
 		files[0]->dumpHeader(stdout);

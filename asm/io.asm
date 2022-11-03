@@ -74,7 +74,7 @@ puts_loop:
 
 puts_done:
     ;LDA '\n'            ; write a newline
-    OUT IO_TERMINAL
+    ;OUT IO_TERMINAL
 
     POP A, X, PC        ; restore A, X and return
 

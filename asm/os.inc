@@ -7,4 +7,5 @@
 
 EXTERN os_createTask
 EXTERN os_sleep
+EXTERN os_yield
 EXTERN os_startScheduler

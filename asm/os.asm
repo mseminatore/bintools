@@ -37,7 +37,7 @@ runnable    DW 0    ; ptr to start of runnable queue
 task_msg    DS "New task created, TCB is at: 0x"
 
 ;=======================================
-; Update our timer tick count
+; Timer interrupt handler
 ;=======================================
 PROC timerIntHandler
     CALL _os_schedule       ; schedule the next runnable task
@@ -60,14 +60,14 @@ idle_top:
     RET
 
 ;==========================================
-; Desc: switch to next runnable task
+; Desc: switch to the next runnable task
 ;
 ; Input: none
 ;
 ; Return: none
 ;==========================================
 PROC _os_schedule
-    PUSH X, Y
+    PUSH X, Y               ; save X and Y
     LDY [current]           ; get ptr to current task TCB
 
     PUSH SP                 ; get current SP in X
@@ -91,11 +91,13 @@ os_schedule1:
     LXX                     ; get the new task SP
     STXY                    ; store the SP at bottom of interrupt return frame
 
-    ; restore its context
-;    CALL os_setContext
+    ;
+    ; Note - we don't need restore next task context here because it is 
+    ; already saved on its own stack from its last run!
+    ;
+;;;    CALL os_setContext
 
-    ; return to the new task    
-    POP X, Y
+    POP X, Y                ; restore X, Y and return
     RET
 
 ;====================================================================
@@ -133,9 +135,22 @@ PROC os_setContext
 ;==========================================
 ; Desc: put current task to sleep
 ;
+; Input: none
 ;
+; Return: none
 ;==========================================
 PROC os_sleep
+    CALL _os_schedule
+    RET
+
+;==========================================
+; Desc: yield rest of timelice of current task
+;
+; Input: none
+;
+; Return: none
+;==========================================
+PROC os_yield
     CALL _os_schedule
     RET
 
@@ -151,20 +166,19 @@ PROC os_startScheduler
     ; don't bother to save Y because we never return to the caller!
     ;
 
-; TODO - check if we are called twice?! Just return if so
+    LDX [current]               ; get current task TCB ptr
+    JEQ os_start1               ; see if there is a task running
+    RET                         ; just return if so
 
-    ; setup timer interrupt handler
+os_start1:
     LDX 1
-    STX MMIO_TIMER_ENA
+    STX MMIO_TIMER_ENA          ; enable timer interrupts
     
-    LDX timerIntHandler         ; note this is a CODE PTR!
+    LDX timerIntHandler         ; setup our timer ISR
     STX int_vector
 
     LDY idleTask                ; create idle task
     CALL os_createTask          ; TODO - check for error?
-
-    ; not required since the CC for new tasks are 0
-;    CALL rtlEnableInterrupts   ; start pre-emptive scheduling
 
     LDX [runnable]              ; make the first runnable task the current
     STX current

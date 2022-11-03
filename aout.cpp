@@ -572,8 +572,8 @@ void ObjectFile::dumpHeader(FILE *f)
 	if (f == nullptr)
 		return;
 
-	fprintf(f, "File Header\n");
-	fprintf(f, "-----------\n\n");
+	fprintf(f, "AOUT File Header\n");
+	fprintf(f, "----------------\n\n");
 
 	fprintf(f, "     Magic Number: 0x%X\n", file_header.a_magic);
 	fprintf(f, "Text Segment size: 0x%04X (%d) bytes\n", file_header.a_text, file_header.a_text);
@@ -651,7 +651,7 @@ void ObjectFile::dumpText(FILE *f)
 	if (f == nullptr)
 		return;
 
-	fprintf(f, "Text segment (hex)\n");
+	fprintf(f, ".text segment (hex)\n");
 	fprintf(f, "------------------\n\n");
 
 	Segment::value_type *pData = text_segment.data();
@@ -704,7 +704,7 @@ void ObjectFile::dumpDataRelocs(FILE *f)
 	if (f == nullptr)
 		return;
 
-	fprintf(f, "Data segment relocations\n");
+	fprintf(f, ".data segment relocations\n");
 	fprintf(f, "------------------------\n\n");
 
 	auto iter = dataRelocs.begin();

@@ -134,11 +134,11 @@ int main(int argc, char *argv[])
 		exit(-1);
 	}
 
-	printf("Dump of file: %s\n\n", argv[iFirstArg]);
+	printf("\nDump of file: %s\n\n", argv[iFirstArg]);
 
-	// TODO - test for OBJ file vs. EXE
+	// test for OBJ file vs. EXE
 	if (a.getTextRelocSize() == 0 && a.getDataRelocSize() == 0)
-		printf("File Type: %s\n\n", "EXECUTABLE FILE");
+		printf("File Type: %s\n\n", "STRIPPED EXECUTABLE FILE");
 	else
 		printf("File Type: %s\n\n", "OBJECT FILE");
 
@@ -153,12 +153,15 @@ int main(int argc, char *argv[])
 	if (g_bDumpData)
 		a.dumpData(stdout);
 
+	// optionally dump the text relocations
 	if (g_bDumpTextRelocs)
 		a.dumpTextRelocs(stdout);
-
+	
+	// optionally dump the data relocations
 	if (g_bDumpDataRelocs)
 		a.dumpDataRelocs(stdout);
 
+	// optionally dump the symbols
 	if (g_bDumpSymbols)
 		a.dumpSymbols(stdout);
 

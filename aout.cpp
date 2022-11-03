@@ -469,8 +469,6 @@ int ObjectFile::readFile(FILE *fptr)
 			auto result = dataSymbolRLookup.insert(DataSymbolRLookup::value_type(sym.value, pStr));
 			assert(result.second);
 		}
-		else
-			assert(false);
 	}
 
 	return 0;

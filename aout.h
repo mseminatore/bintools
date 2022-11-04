@@ -19,6 +19,10 @@
 #include <vector>
 #include <map>
 
+
+#define HEX_PREFIX "$"
+//#define HEX_PREFIX "0x"
+
 // Define the a.out header
 struct AOUT_HEADER
 {

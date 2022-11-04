@@ -578,14 +578,14 @@ void ObjectFile::dumpHeader(FILE *f)
 	fprintf(f, "AOUT File Header\n");
 	fprintf(f, "----------------\n\n");
 
-	fprintf(f, "     Magic Number: 0x%X\n", file_header.a_magic);
-	fprintf(f, "Text Segment size: 0x%04X (%d) bytes\n", file_header.a_text, file_header.a_text);
-	fprintf(f, "Data Segment size: 0x%04X (%d) bytes\n", file_header.a_data, file_header.a_data);
-	fprintf(f, " BSS Segment size: 0x%04X (%d) bytes\n", file_header.a_bss, file_header.a_bss);
-	fprintf(f, "Symbol Table size: 0x%04X (%d) bytes\n", file_header.a_syms, file_header.a_syms);
-	fprintf(f, " Main Entry Point: 0x%04X\n", file_header.a_entry);
-	fprintf(f, " Text reloc count: 0x%04X (%d) entries\n", file_header.a_trsize, file_header.a_trsize);
-	fprintf(f, " Data reloc count: 0x%04X (%d) entries\n\n", file_header.a_drsize, file_header.a_drsize);
+	fprintf(f, "     Magic Number: " HEX_PREFIX "%X\n", file_header.a_magic);
+	fprintf(f, "Text Segment size: " HEX_PREFIX "%04X (%d) bytes\n", file_header.a_text, file_header.a_text);
+	fprintf(f, "Data Segment size: " HEX_PREFIX "%04X (%d) bytes\n", file_header.a_data, file_header.a_data);
+	fprintf(f, " BSS Segment size: " HEX_PREFIX "%04X (%d) bytes\n", file_header.a_bss, file_header.a_bss);
+	fprintf(f, "Symbol Table size: " HEX_PREFIX "%04X (%d) bytes\n", file_header.a_syms, file_header.a_syms);
+	fprintf(f, " Main Entry Point: " HEX_PREFIX "%04X\n", file_header.a_entry);
+	fprintf(f, " Text reloc count: " HEX_PREFIX "%04X (%d) entries\n", file_header.a_trsize, file_header.a_trsize);
+	fprintf(f, " Data reloc count: " HEX_PREFIX "%04X (%d) entries\n\n", file_header.a_drsize, file_header.a_drsize);
 }
 
 //
@@ -747,6 +747,6 @@ void ObjectFile::dumpSymbols(FILE *f)
 		if (sym.second.type & SET_UNDEFINED)
 			type += " external";
 
-		fprintf(f, "%15s\t%s segment\toffset: %d (0x%04X)\n", sym.first.c_str(), type.c_str(), sym.second.value, sym.second.value);
+		fprintf(f, "%15s\t%s segment\toffset: %d (" HEX_PREFIX "%04X)\n", sym.first.c_str(), type.c_str(), sym.second.value, sym.second.value);
 	}
 }

@@ -111,7 +111,7 @@ public:
 		if (getSymbolAddress(name, addr))
 		{
 			breakpoints.erase(addr);
-			log("breakpoint deleted @ %s (0x%04X)", name.c_str(), addr);
+			log("breakpoint deleted @ %s (" HEX_PREFIX "%04X)", name.c_str(), addr);
 
 			return true;
 		}
@@ -127,7 +127,7 @@ public:
 		if (getSymbolAddress(name, addr))
 		{
 			addBreakpoint(addr);
-			log("breakpoint set @ %s (0x%04X)", name.c_str(), addr);
+			log("breakpoint set @ %s (" HEX_PREFIX "%04X)", name.c_str(), addr);
 
 			return true;
 		}
@@ -154,14 +154,14 @@ public:
 
 	void printByte(uint16_t addr)
 	{
-		printf("%d (0x%04X) points to -> %d (0x%02X)\n", addr, addr, ram[addr], ram[addr]);
+		printf("%d (" HEX_PREFIX "%04X) points to -> %d (" HEX_PREFIX "%02X)\n", addr, addr, ram[addr], ram[addr]);
 	}
 
 	void printWord(uint16_t addr)
 	{
 		uint16_t value = ram[addr] + (ram[addr + 1] << 8);
 
-		printf("%d (0x%04X) points to -> %d (0x%04X)\n", addr, addr, value, value);
+		printf("%d (" HEX_PREFIX "%04X) points to -> %d (" HEX_PREFIX "%04X)\n", addr, addr, value, value);
 	}
 
 	void dumpMemoryAt(uint32_t addr)
@@ -178,12 +178,12 @@ public:
 		if (obj.findNearestCodeSymbolToAddr(PC, name, addr))
 		{
 			if (PC > addr)
-				log("execution stopped @ %s +%d (0x%04X)", name.c_str(), PC - addr, PC);
+				log("execution stopped @ %s +%d (" HEX_PREFIX "%04X)", name.c_str(), PC - addr, PC);
 			else
-				log("execution stopped @ %s (0x%04X)", name.c_str(), PC);
+				log("execution stopped @ %s (" HEX_PREFIX "%04X)", name.c_str(), PC);
 		}
 		else
-			log("stopped @ 0x%X", PC);
+			log("stopped @ " HEX_PREFIX "%X", PC);
 	}
 };
 
@@ -197,9 +197,9 @@ void Cisc::listBreakpoints()
 	for (auto it = breakpoints.begin(); it != breakpoints.end(); it++)
 	{
 		if (getCodeSymbolName(*it, name))
-			printf("breakpoint @ %s (0x%04X)\n", name.c_str(), *it);
+			printf("breakpoint @ %s (" HEX_PREFIX "%04X)\n", name.c_str(), *it);
 		else
-			printf("breakpoint @ 0x%04X\n", *it);
+			printf("breakpoint @ " HEX_PREFIX "%04X\n", *it);
 	}
 }
 
@@ -242,7 +242,7 @@ void Cisc::load(const std::string &filename)
 	if (obj.findSymbol("__brk", se))
 	{
 		__brk = ram[se.value] + (ram[se.value + 1] << 8);
-		printf("Found stack __brk limit of: 0x%04X\n", __brk);
+		printf("Found stack __brk limit of: " HEX_PREFIX "%04X\n", __brk);
 	}
 }
 
@@ -507,7 +507,7 @@ uint8_t Cisc::exec()
 		if (obj.findDataSymbolByAddr(addr, name))
 			log("ADD [%s]", name.c_str());
 		else
-			log("ADD [0x%X]", addr);
+			log("ADD [" HEX_PREFIX "%X]", addr);
 		break;
 
 	case OP_ADDI:
@@ -521,7 +521,7 @@ uint8_t Cisc::exec()
 
 		A = temp16 & 0xFF;
 
-		log("ADD 0x%X (%d)", operand, operand);
+		log("ADD " HEX_PREFIX "%X (%d)", operand, operand);
 		break;
 
 	case OP_ADC:
@@ -538,7 +538,7 @@ uint8_t Cisc::exec()
 		if (obj.findDataSymbolByAddr(addr, name))
 			log("ADC [%s]", name.c_str());
 		else
-			log("ADC [0x%X]", addr);
+			log("ADC [" HEX_PREFIX "%X]", addr);
 		break;
 
 	case OP_ADCI:
@@ -552,7 +552,7 @@ uint8_t Cisc::exec()
 
 		A = temp16 & 0xFF;
 
-		log("ADC 0x%X (%d)", operand, operand);
+		log("ADC " HEX_PREFIX "%X (%d)", operand, operand);
 		break;
 
 	case OP_AAX:
@@ -581,7 +581,7 @@ uint8_t Cisc::exec()
 		if (obj.findDataSymbolByAddr(addr, name))
 			log("CMP [%s]", name.c_str());
 		else
-			log("CMP [0x%X]", addr);
+			log("CMP [" HEX_PREFIX "%X]", addr);
 		break;
 
 	case OP_CMPI:
@@ -595,7 +595,7 @@ uint8_t Cisc::exec()
 
 		// Note: dwe iscard the result!
 
-		log("CMP %d\t;'%c'\t0x%X", operand, makePrintable(operand), operand);
+		log("CMP %d\t;'%c'\t" HEX_PREFIX "%X", operand, makePrintable(operand), operand);
 		break;
 
 	case OP_SUB:
@@ -612,7 +612,7 @@ uint8_t Cisc::exec()
 		if (obj.findDataSymbolByAddr(addr, name))
 			log("SUB [%s]", name.c_str());
 		else
-			log("SUB [0x%X]", addr);
+			log("SUB [" HEX_PREFIX "%X]", addr);
 		break;
 
 	case OP_SUBI:
@@ -626,7 +626,7 @@ uint8_t Cisc::exec()
 
 		A = temp16 & 0xFF;
 
-		log("SUB 0x%X", operand);
+		log("SUB " HEX_PREFIX "%X", operand);
 		break;
 
 	case OP_SBB:
@@ -643,7 +643,7 @@ uint8_t Cisc::exec()
 		if (obj.findDataSymbolByAddr(addr, name))
 			log("SBB [%s]", name.c_str());
 		else
-			log("SBB [0x%X]", addr);
+			log("SBB [" HEX_PREFIX "%X]", addr);
 		break;
 
 	case OP_SBBI:
@@ -657,7 +657,7 @@ uint8_t Cisc::exec()
 
 		A = temp16 & 0xFF;
 
-		log("SBB 0x%X", operand);
+		log("SBB " HEX_PREFIX "%X", operand);
 		break;
 
 	case OP_AND:
@@ -671,7 +671,7 @@ uint8_t Cisc::exec()
 		if (obj.findDataSymbolByAddr(addr, name))
 			log("AND [%s]", name.c_str());
 		else
-			log("AND [0x%X]", addr);
+			log("AND [" HEX_PREFIX "%X]", addr);
 		break;
 	
 	case OP_ANDI:
@@ -682,7 +682,7 @@ uint8_t Cisc::exec()
 		updateFlag(A & 0x80, FLAG_N);
 		updateFlag(0, FLAG_V);
 
-		log("AND 0x%X", operand);
+		log("AND " HEX_PREFIX "%X", operand);
 		break;
 
 	case OP_OR:
@@ -696,7 +696,7 @@ uint8_t Cisc::exec()
 		if (obj.findDataSymbolByAddr(addr, name))
 			log("OR [%s]", name.c_str());
 		else
-			log("OR [0x%X]", addr);
+			log("OR [" HEX_PREFIX "%X]", addr);
 		break;
 
 	case OP_ORI:
@@ -707,7 +707,7 @@ uint8_t Cisc::exec()
 		updateFlag(A & 0x80, FLAG_N);
 		updateFlag(0, FLAG_V);
 
-		log("OR 0x%X", operand);
+		log("OR " HEX_PREFIX "%X", operand);
 		break;
 
 	case OP_XOR:
@@ -721,7 +721,7 @@ uint8_t Cisc::exec()
 		if (obj.findDataSymbolByAddr(addr, name))
 			log("XOR [%s]", name.c_str());
 		else
-			log("XOR [0x%X]", addr);
+			log("XOR [" HEX_PREFIX "%X]", addr);
 		break;
 
 	case OP_XORI:
@@ -732,7 +732,7 @@ uint8_t Cisc::exec()
 		updateFlag(A & 0x80, FLAG_N);
 		updateFlag(0, FLAG_V);
 
-		log("XOR 0x%X", operand);
+		log("XOR " HEX_PREFIX "%X", operand);
 		break;
 
 	case OP_NOT:
@@ -758,7 +758,7 @@ uint8_t Cisc::exec()
 		if (obj.findCodeSymbolByAddr(addr, name))
 			log("CALL %s", name.c_str());
 		else
-			log("CALL %s (0x%X)", name.c_str(), PC);
+			log("CALL %s (" HEX_PREFIX "%X)", name.c_str(), PC);
 		break;
 	
 	case OP_RET:
@@ -779,7 +779,7 @@ uint8_t Cisc::exec()
 		if (obj.findCodeSymbolByAddr(PC, name))
 			log("JMP %s", name.c_str());
 		else
-			log("JMP 0x%X", PC);
+			log("JMP " HEX_PREFIX "%X", PC);
 		break;
 
 	case OP_JNE:
@@ -790,7 +790,7 @@ uint8_t Cisc::exec()
 		if (obj.findCodeSymbolByAddr(addr, name))
 			log("JNE %s", name.c_str());
 		else
-			log("JNE 0x%X", addr);
+			log("JNE " HEX_PREFIX "%X", addr);
 		break;
 
 	case OP_JEQ:
@@ -801,7 +801,7 @@ uint8_t Cisc::exec()
 		if (obj.findCodeSymbolByAddr(addr, name))
 			log("JEQ %s", name.c_str());
 		else
-			log("JEQ 0x%X", addr);
+			log("JEQ " HEX_PREFIX "%X", addr);
 		break;
 
 	case OP_JGT:
@@ -812,7 +812,7 @@ uint8_t Cisc::exec()
 		if (obj.findCodeSymbolByAddr(addr, name))
 			log("JGT %s", name.c_str());
 		else
-			log("JGT 0x%X", addr);
+			log("JGT " HEX_PREFIX "%X", addr);
 		break;
 
 	case OP_JLT:
@@ -823,7 +823,7 @@ uint8_t Cisc::exec()
 		if (obj.findCodeSymbolByAddr(addr, name))
 			log("JLT %s", name.c_str());
 		else
-			log("JLT 0x%X", addr);
+			log("JLT " HEX_PREFIX "%X", addr);
 		break;
 
 	case OP_LAX:
@@ -857,7 +857,7 @@ uint8_t Cisc::exec()
 		if (obj.findDataSymbolByAddr(addr, name))
 			log("LDA [%s]", name.c_str());
 		else
-			log("LDA [0x%X]", addr);
+			log("LDA [" HEX_PREFIX "%X]", addr);
 		break;
 
 	case OP_LDAI:
@@ -868,7 +868,7 @@ uint8_t Cisc::exec()
 		updateFlag(A & 0x80, FLAG_N);
 		updateFlag(0, FLAG_V);
 
-		log("LDA 0x%X", operand);
+		log("LDA " HEX_PREFIX "%X", operand);
 		break;
 
 	case OP_LDX:
@@ -882,7 +882,7 @@ uint8_t Cisc::exec()
 		if (obj.findDataSymbolByAddr(addr, name))
 			log("LDX [%s]", name.c_str());
 		else
-			log("LDX [0x%X]", addr);
+			log("LDX [" HEX_PREFIX "%X]", addr);
 		break;
 
 	case OP_LDXI:
@@ -892,7 +892,7 @@ uint8_t Cisc::exec()
 		updateFlag(X & 0x8000, FLAG_N);
 		updateFlag(0, FLAG_V);
 
-		log("LDX 0x%X", X);
+		log("LDX " HEX_PREFIX "%X", X);
 		break;
 
 	case OP_LDY:
@@ -906,7 +906,7 @@ uint8_t Cisc::exec()
 		if (obj.findDataSymbolByAddr(addr, name))
 			log("LDY [%s]", name.c_str());
 		else
-			log("LDY [0x%X]", addr);
+			log("LDY [" HEX_PREFIX "%X]", addr);
 		break;
 
 	case OP_LDYI:
@@ -916,7 +916,7 @@ uint8_t Cisc::exec()
 		updateFlag(Y & 0x8000, FLAG_N);
 		updateFlag(0, FLAG_V);
 
-		log("LDY 0x%X", Y);
+		log("LDY " HEX_PREFIX "%X", Y);
 		break;
 
 	case OP_LEAX:
@@ -964,7 +964,7 @@ uint8_t Cisc::exec()
 		if (obj.findDataSymbolByAddr(addr, name))
 			log("STA %s", name.c_str());
 		else
-			log("STA 0x%X", addr);
+			log("STA " HEX_PREFIX "%X", addr);
 		break;
 
 	case OP_STX:
@@ -975,7 +975,7 @@ uint8_t Cisc::exec()
 		if (obj.findDataSymbolByAddr(addr, name))
 			log("STX %s", name.c_str());
 		else
-			log("STX 0x%X", addr);
+			log("STX " HEX_PREFIX "%X", addr);
 		break;
 
 	case OP_STY:
@@ -986,7 +986,7 @@ uint8_t Cisc::exec()
 		if (obj.findDataSymbolByAddr(addr, name))
 			log("STY %s", name.c_str());
 		else
-			log("STY 0x%X", addr);
+			log("STY " HEX_PREFIX "%X", addr);
 		break;
 
 	case OP_STAX:
@@ -1360,7 +1360,7 @@ int main(int argc, char* argv[])
 					std::string name;
 
 					cpu.getCodeSymbolName(pc, name);
-					fprintf(stdout, "breakpoint hit @ %s (0x%04X)\n", name.c_str(), pc);
+					fprintf(stdout, "breakpoint hit @ %s (" HEX_PREFIX  "%04X)\n", name.c_str(), pc);
 
 					cpu.setCC(cpu.getCC() | FLAG_S);
 				}

@@ -37,8 +37,7 @@ current     DW 0    ; ptr to current task TCB
 runnable    DW 0    ; ptr to start of runnable queue
 sleeping    DW 0    ; ptr to sleep queue
 
-task_msg    DS "New task created, TCB is at: 0x"
-task_len    DS "Tasks: 0x"
+task_msg    DS "New task created, TCB is at: $"
 
 ;=======================================
 ; Timer interrupt handler

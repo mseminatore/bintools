@@ -178,9 +178,9 @@ public:
 		if (obj.findNearestCodeSymbolToAddr(PC, name, addr))
 		{
 			if (PC > addr)
-				log("stopped @ %s + %d (0x%04X)", name.c_str(), PC - addr, PC);
+				log("execution stopped @ %s +%d (0x%04X)", name.c_str(), PC - addr, PC);
 			else
-				log("stopped @ %s (0x%04X)", name.c_str(), PC);
+				log("execution stopped @ %s (0x%04X)", name.c_str(), PC);
 		}
 		else
 			log("stopped @ 0x%X", PC);
@@ -1197,7 +1197,7 @@ uint16_t Cisc::getAddressFromToken(char *tok)
 		tok++;
 	}
 
-	if (isxdigit(tok[0]))
+	if (isxdigit(tok[0]) || (base == 16 && isxdigit(tok[0])))
 		addr = (uint16_t)strtoul(tok, nullptr, base);
 	else
 	{
@@ -1320,7 +1320,7 @@ int main(int argc, char* argv[])
 						tok++;
 					}
 
-					if (isdigit(tok[0]))
+					if (isxdigit(tok[0]) || (base == 16 && isxdigit(tok[0])))
 						addr = (uint16_t)strtoul(tok, nullptr, base);
 					else
 						cpu.getSymbolAddress(tok, addr);
@@ -1341,7 +1341,7 @@ int main(int argc, char* argv[])
 						tok++;
 					}
 
-					if (isxdigit(tok[0]))
+					if (isdigit(tok[0]) || (base == 16 && isxdigit(tok[0])))
 						addr = (uint16_t)strtoul(tok, nullptr, base);
 					else
 						cpu.getSymbolAddress(tok, addr);

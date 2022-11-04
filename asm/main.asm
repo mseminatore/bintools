@@ -34,7 +34,7 @@ PROC _main
 
     CALL os_startScheduler  ; start the scheduler
 
-; !! execution never gets here!!    
+; !! Note that execution never gets here!!    
 
     ; output finished message
     LDX finished

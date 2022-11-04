@@ -8,6 +8,7 @@
 INCLUDE "rtl.inc"
 INCLUDE "error.inc"
 INCLUDE "io.inc"
+INCLUDE "list.inc"
 
 ;==========================================
 ; Desc: Task Control Block (TCB)
@@ -34,7 +35,10 @@ TCB_PC_OFFSET   EQU 10
 ;==========================================
 current     DW 0    ; ptr to current task TCB
 runnable    DW 0    ; ptr to start of runnable queue
+sleeping    DW 0    ; ptr to sleep queue
+
 task_msg    DS "New task created, TCB is at: 0x"
+task_len    DS "Tasks: 0x"
 
 ;=======================================
 ; Timer interrupt handler
@@ -218,6 +222,7 @@ PROC os_createTask
 
     ; add task to runnable queue
     PUSH Y                  ; save Y (task PC) on stack
+
     LDY [runnable]          ; get ptr to next task on runnable queue
     STX runnable            ; make new task the head of runnable queue
     STYX                    ; save ptr to former head of queue to new task next
@@ -241,7 +246,7 @@ PROC os_createTask
 
     SUB 1                   ; X + A - 1 is top of stack
     AAX                 
-    LEAX -8                ; adjust for registers that will be saved on stack
+    LEAX -8                 ; adjust for registers that will be saved on stack
     STXY                    ; save task SP to TCB
 
     ;
@@ -260,13 +265,13 @@ os_createTask_done:
     POP A                   ; get top byte of new task
     CALL printHexByte
 
-    PUSH X
+    PUSH X                  ; get lo byte of new task
     POP A
-    CALL printHexByte
+    CALL printHexByte       ; print it out
     POP A
 
-    LDA '\n'
+    LDA '\n'                ; newline
     CALL putc
 
-    POP A, X, Y
+    POP A, X, Y             ; restore A, X, Y and return
     RET

@@ -8,3 +8,4 @@
 EXTERN list_init
 EXTERN list_add
 EXTERN list_remove
+EXTERN list_length

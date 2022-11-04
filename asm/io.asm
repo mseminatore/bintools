@@ -73,9 +73,6 @@ puts_loop:
     JMP puts_loop       ; repeat
 
 puts_done:
-    ;LDA '\n'            ; write a newline
-    ;OUT IO_TERMINAL
-
     POP A, X, PC        ; restore A, X and return
 
 ;=============================================

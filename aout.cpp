@@ -89,16 +89,20 @@ bool ObjectFile::findDataSymbolByAddr(uint16_t addr, std::string &name)
 // find nearst code symbol less than given address
 bool ObjectFile::findNearestCodeSymbolToAddr(uint16_t addr, std::string &name, uint16_t &symAddr)
 {
-	auto it = codeSymbolRLookup.begin();
-	for (; it->first < addr && it != codeSymbolRLookup.end(); it++)
-		;
+	//auto it = codeSymbolRLookup.begin();
+	//for (; it->first >= addr && it != codeSymbolRLookup.end(); it++)
+	//	;
 
-	// fixup if we went beyond
-	if (it->first > addr)
+	//// fixup if we went beyond
+	//if (it->first > addr)
+	//	it--;
+
+	//if (it == codeSymbolRLookup.end())
+	//	return false;
+
+	auto it = codeSymbolRLookup.lower_bound(addr);
+	if (it->first != addr && it != codeSymbolRLookup.begin())
 		it--;
-
-	if (it == codeSymbolRLookup.end())
-		return false;
 
 	symAddr = (uint16_t)it->first;
 	name = it->second;
@@ -141,11 +145,8 @@ void ObjectFile::concat(ObjectFile *rhs)
 				sym->value = it->second.value + rhs->getTextBase();
 			else if (sym->type & SET_DATA)
 				sym->value = it->second.value + rhs->getDataBase();
-			else
-			{
-				assert(false);
+			else if (sym->type & SET_BSS)
 				sym->value = it->second.value + rhs->getBssBase();
-			}
 		}
 		else
 		{
@@ -157,8 +158,10 @@ void ObjectFile::concat(ObjectFile *rhs)
 					sym.value = it->second.value + rhs->getTextBase();
 				else if (it->second.type & SET_DATA)
 					sym.value = it->second.value + rhs->getDataBase();
-				else
+				else if (it->second.type & SET_BSS)
 					sym.value = it->second.value + rhs->getBssBase();
+				else
+					assert(false);
 
 				addSymbol(it->first, sym);
 			}
@@ -652,7 +655,7 @@ void ObjectFile::dumpText(FILE *f)
 		return;
 
 	fprintf(f, ".text segment (hex)\n");
-	fprintf(f, "------------------\n\n");
+	fprintf(f, "-------------------\n\n");
 
 	Segment::value_type *pData = text_segment.data();
 	hexDumpSegment(f, pData, text_segment.size());
@@ -705,7 +708,7 @@ void ObjectFile::dumpDataRelocs(FILE *f)
 		return;
 
 	fprintf(f, ".data segment relocations\n");
-	fprintf(f, "------------------------\n\n");
+	fprintf(f, "-------------------------\n\n");
 
 	auto iter = dataRelocs.begin();
 	for (; iter != dataRelocs.end(); iter++)

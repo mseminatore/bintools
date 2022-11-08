@@ -34,7 +34,7 @@ PROC getc
 ;
 ; Input: pointer to buffer in X
 ;
-; Return:
+; Return: none
 ;=======================================
 PROC gets
     PUSH A, X

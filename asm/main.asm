@@ -12,6 +12,7 @@ INCLUDE "os.inc"
 ;==========================================
 prompt      DS "Welcome to the CPU emulator!\n"
 finished    DS "Spinning forever!"
+;in_buf      DM 32
 
 ;==========================================
 ; Start of program initialization
@@ -29,6 +30,9 @@ PROC init
 ; Main program start
 ;==========================================
 PROC _main
+;    LDX in_buf
+;    CALL gets
+
     LDY task                ; create a new task
     CALL os_createTask    
 

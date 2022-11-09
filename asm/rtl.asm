@@ -48,13 +48,17 @@ PROC brkHandler
 ; Return: none
 ;=======================================
 PROC rtlEnableInterrupts
+    PUSH A          ; save A
+
     PUSH CC
     POP A           ; get CC flags in A
 
     AND 0xEF        ; clear I flag
 
     PUSH A
-    POP CC          ; move A to CC and return
+    POP CC          ; move A to CC
+    
+    POP A           ; restore A
     RET
 
 ;=======================================
@@ -65,13 +69,17 @@ PROC rtlEnableInterrupts
 ; Return: none
 ;=======================================
 PROC rtlDisableInterrupts
+    PUSH A          ; save A
+
     PUSH CC
     POP A           ; get CC flags in A
 
     OR FLAG_I       ; set I flag
 
     PUSH A
-    POP CC          ; move A to CC and return
+    POP CC          ; move A to CC
+    
+    POP A           ; restore A and return
     RET
 
 ;=======================================

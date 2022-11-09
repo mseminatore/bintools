@@ -110,13 +110,13 @@ protected:
 	// Make this a vector with a map of name/index pairs for lookup.
 	using SymbolTable = std::vector<std::pair<std::string, SymbolEntity> >;
 	using SymbolLookup = std::map<std::string, size_t>;
-	using CodeSymbolRLookup = std::map<size_t, std::string>;
-	using DataSymbolRLookup = std::map<size_t, std::string>;
+	using SymbolRLookup = std::map<size_t, std::string>;
 
 	SymbolTable symbolTable;
 	SymbolLookup symbolLookup;
-	CodeSymbolRLookup codeSymbolRLookup;
-	DataSymbolRLookup dataSymbolRLookup;
+	SymbolRLookup codeSymbolRLookup;
+	SymbolRLookup dataSymbolRLookup;
+	SymbolRLookup bssSymbolRLookup;
 
 	using StringTable = std::vector<char>;
 	StringTable stringTable;
@@ -134,6 +134,7 @@ public:
 		return file_header.a_magic == 263 && file_header.a_text > 0;
 	}
 
+	// file IO
 	int writeFile(FILE *fptr);
 	int writeFile(const std::string &name);
 	int readFile(FILE *fptr);
@@ -155,6 +156,7 @@ public:
 	void setTextBase(uint32_t base) { textBase = base; }
 	void setDataBase(uint32_t base) { dataBase = base; }
 	void setBssBase(uint32_t base)	{ bssBase = base; }
+	void updateBssSymbols();
 
 	uint32_t getTextBase() const	{ return textBase; }
 	uint32_t getDataBase() const	{ return dataBase; }
@@ -190,6 +192,7 @@ public:
 	void dumpSymbols(FILE*);
 };
 
+// helper functions
 void hexDumpGroup(FILE *f, uint8_t *buf);
 void hexDumpLine(FILE *f, uint32_t offset, uint8_t *buf);
 void hexDumpSegment(FILE *f, uint8_t *seg, size_t size);

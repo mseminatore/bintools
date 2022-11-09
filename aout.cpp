@@ -33,6 +33,7 @@ void ObjectFile::clear()
 	symbolLookup.clear();
 	codeSymbolRLookup.clear();
 	dataSymbolRLookup.clear();
+	bssSymbolRLookup.clear();
 
 	stringTable.clear();
 
@@ -83,23 +84,19 @@ bool ObjectFile::findDataSymbolByAddr(uint16_t addr, std::string &name)
 		return true;
 	}
 
+	it = bssSymbolRLookup.find(addr);
+	if (it != bssSymbolRLookup.end())
+	{
+		name = it->second;
+		return true;
+	}
+
 	return false;
 }
 
 // find nearst code symbol less than given address
 bool ObjectFile::findNearestCodeSymbolToAddr(uint16_t addr, std::string &name, uint16_t &symAddr)
 {
-	//auto it = codeSymbolRLookup.begin();
-	//for (; it->first >= addr && it != codeSymbolRLookup.end(); it++)
-	//	;
-
-	//// fixup if we went beyond
-	//if (it->first > addr)
-	//	it--;
-
-	//if (it == codeSymbolRLookup.end())
-	//	return false;
-
 	auto it = codeSymbolRLookup.lower_bound(addr);
 	if (it->first != addr && it != codeSymbolRLookup.begin())
 		it--;
@@ -108,6 +105,17 @@ bool ObjectFile::findNearestCodeSymbolToAddr(uint16_t addr, std::string &name, u
 	name = it->second;
 
 	return true;
+}
+
+//
+void ObjectFile::updateBssSymbols()
+{
+	// Note: we must update the symbolTable addresses so that BSS 
+	for (auto it = symbolTable.begin(); it != symbolTable.end(); it++)
+	{
+		if (it->second.type & SET_BSS)
+			it->second.value += getBssBase();
+	}
 }
 
 //
@@ -186,6 +194,8 @@ void ObjectFile::concat(ObjectFile *rhs)
 					it->index = SEG_TEXT;
 				else if (sym->type & SET_DATA)
 					it->index = SEG_DATA;
+				else if (sym->type & SET_BSS)
+					it->index = SEG_BSS;
 				else
 					assert(false);
 			}
@@ -293,7 +303,7 @@ bool ObjectFile::relocate(const std::vector<ObjectFile*> &modules)
 			}
 			else if (it->index == SEG_BSS)
 			{
-				assert(false);
+				addr = bssBase + text_segment[it->address] + (text_segment[it->address + 1] << 8);
 			}
 
 			// patch the address in code segment
@@ -464,12 +474,17 @@ int ObjectFile::readFile(FILE *fptr)
 
 		if (sym.type & SET_TEXT)
 		{
-			auto result = codeSymbolRLookup.insert(CodeSymbolRLookup::value_type(sym.value, pStr));
+			auto result = codeSymbolRLookup.insert(SymbolRLookup::value_type(sym.value, pStr));
 			assert(result.second);
 		}
-		else if (sym.type & SET_DATA || sym.type & SET_BSS)
+		else if (sym.type & SET_DATA)
 		{
-			auto result = dataSymbolRLookup.insert(DataSymbolRLookup::value_type(sym.value, pStr));
+			auto result = dataSymbolRLookup.insert(SymbolRLookup::value_type(sym.value, pStr));
+			assert(result.second);
+		}
+		else if (sym.type & SET_BSS)
+		{
+			auto result = bssSymbolRLookup.insert(SymbolRLookup::value_type(sym.value, pStr));
 			assert(result.second);
 		}
 	}
@@ -521,13 +536,25 @@ void ObjectFile::addSymbol(const std::string &name, SymbolEntity &sym)
 	auto index = symbolTable.size();
 
 	symbolTable.push_back(SymbolTable::value_type(name, sym));
-	symbolLookup.insert(SymbolLookup::value_type(name, index));
+	auto sl = symbolLookup.insert(SymbolLookup::value_type(name, index));
+	assert(sl.second);
 
 	if (sym.type & SET_TEXT)
-		codeSymbolRLookup.insert(CodeSymbolRLookup::value_type(sym.value, name));
-	else if (sym.type & SET_DATA || sym.type & SET_BSS)
-		dataSymbolRLookup.insert(DataSymbolRLookup::value_type(sym.value, name));
-	//else
+	{
+		auto r = codeSymbolRLookup.insert(SymbolRLookup::value_type(sym.value, name));
+		assert(r.second);
+	}
+	else if (sym.type & SET_DATA)
+	{
+		auto r = dataSymbolRLookup.insert(SymbolRLookup::value_type(sym.value, name));
+		assert(r.second);
+	}
+	else if (sym.type & SET_BSS)
+	{
+		auto r = bssSymbolRLookup.insert(SymbolRLookup::value_type(sym.value, name));
+		assert(r.second);
+	}
+
 	//	assert(false);
 }
 
@@ -677,6 +704,20 @@ void ObjectFile::dumpData(FILE *f)
 	fputc('\n', f);
 }
 
+//
+const char *getSegmentName(uint32_t seg)
+{
+	if (seg == SEG_TEXT)
+		return ".text";
+	else if (seg == SEG_DATA)
+		return ".data";
+	else if (seg == SEG_BSS)
+		return ".bss";
+
+	assert(false);
+	return "unknown!";
+}
+
 // output the text relocations
 void ObjectFile::dumpTextRelocs(FILE *f)
 {
@@ -694,7 +735,7 @@ void ObjectFile::dumpTextRelocs(FILE *f)
 		if (re.external)
 			fprintf(f, "%04X\tsize: %d (bytes)\tExternal\t%s\n", re.address, 1 << re.length, symbolTable[re.index].first.c_str());
 		else
-			fprintf(f, "%04X\tsize: %d (bytes)\tSegment: %s\n", re.address, 1 << re.length, re.index == SEG_TEXT ? ".text" : ".data");
+			fprintf(f, "%04X\tsize: %d (bytes)\tSegment: %s\n", re.address, 1 << re.length, getSegmentName(re.index));
 	}
 
 	fputc('\n', f);

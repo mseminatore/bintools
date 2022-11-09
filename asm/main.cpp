@@ -325,7 +325,7 @@ void AsmParser::addFixup(const std::string &str, uint16_t addr)
 	}
 }
 
-//
+// Allocate a block of memory in the DATA or BSS segment
 void AsmParser::dataMemory(SymbolEntry *sym)
 {
 	SymbolEntity se;
@@ -350,7 +350,7 @@ void AsmParser::dataMemory(SymbolEntry *sym)
 	}
 }
 
-// Allocate a data byte in the data segment
+// Allocate a data byte in the DATA or BSS segment
 void AsmParser::dataByte(SymbolEntry *sym)
 {
 	SymbolEntity se;
@@ -389,7 +389,7 @@ void AsmParser::dataByte(SymbolEntry *sym)
 	}
 }
 
-// Allocate a data word in the data segment
+// Allocate a data word in the DATA or BSS segment
 void AsmParser::dataWord(SymbolEntry *sym)
 {
 	SymbolEntity se;
@@ -674,6 +674,14 @@ void AsmParser::imm16(int op)
 		// handle CODE PTR's
 		if (yylval.sym->type == stProc)
 			index = SEG_TEXT;
+		else if (yylval.sym->type != stUndef && !external)
+		{
+			SymbolEntity se;
+			if (!obj.findSymbol(yylval.sym->lexeme, se))
+				assert(false);
+
+			index = (se.type == SET_DATA) ? SEG_DATA : SEG_BSS;
+		}
 
 		if (external)
 		{
@@ -747,7 +755,14 @@ void AsmParser::memOperand(int immOp, int memOp, bool isWordValue)
 	if (bSegmentRelative)
 	{
 		auto external = yylval.sym->type == stExternal ? true : false;
-		uint32_t index = SEG_DATA;
+
+		// figure out if this symbol is in DATA or BSS segment
+		SymbolEntity se;
+		if (!obj.findSymbol(yylval.sym->lexeme, se))
+			assert(false);
+
+		uint32_t index = (se.type == SET_DATA) ? SEG_DATA : SEG_BSS;
+
 		if (external)
 		{
 			// for stExternal this needs to be the index to the symbol table entry
@@ -793,7 +808,16 @@ void AsmParser::dataAddress(int op)
 	obj.addText(HIBYTE(val));
 
 	if (bSegmentRelative)
-		addTextRelocation(addr, 1, SEG_DATA, false);
+	{
+		// figure out if this symbol is in DATA or BSS segment
+		SymbolEntity se;
+		if (!obj.findSymbol(yylval.sym->lexeme, se))
+			assert(false);
+
+		uint32_t index = (se.type == SET_DATA) ? SEG_DATA : SEG_BSS;
+
+		addTextRelocation(addr, 1, index, false);
+	}
 
 	match();
 }

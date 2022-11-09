@@ -124,16 +124,13 @@ int main(int argc, char* argv[])
 
 		offset = files[i - 1]->getDataBase() + files[i - 1]->getDataSize();
 		files[i]->setDataBase(offset);
-
-		// TODO - the BSS segments should stack at the end of the data segments!!
-		//offset = files[i - 1]->getBssBase() + files[i - 1]->getBssSize();
-		//files[i]->setBssBase(offset);
 	}
 
 	// compute bss segment starts, start of bss is at the end of the last data segment
 	size_t lastFile = files.size() - 1;
 	uint32_t bssOffset = files[lastFile]->getDataBase() + files[lastFile]->getDataSize();
 	files[0]->setBssBase(bssOffset);
+	files[0]->updateBssSymbols();
 
 	log(LOG_VERBOSE, "Compute bss segment starts\n");
 	for (size_t i = 1; i < files.size(); i++)

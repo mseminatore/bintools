@@ -130,7 +130,9 @@ written.
 
 ## Assembly libraries
 
-In the course of testing I've written a few small example libraries
+In the course of testing the toolchain, I've written a few small example 
+libraries. This was very helpful for teasing out subtle bugs. Looking over
+these examples is a good way to get a feel for coding for this architecture.
 
 File | Description
 ---- | -----------
@@ -151,4 +153,5 @@ EQU | EQUates a symbol name to a value (e.g. foo EQU 0xFF)
 DB | defines and optionally names a byte in the data seg (eg. size DB 1)
 DW | defines and optionally names a word in the data seg (eg. count DW 1024)
 DS | defines and optionally names a string in the data seg (eg. prompt DS "Hi!")
+DM | defines ane optionally names an uninitialized block of memory (eg. buffer DM 32)
 PROC | defines and names the start of a subroutine (eg. PROC _main)

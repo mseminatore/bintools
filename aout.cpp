@@ -98,6 +98,9 @@ bool ObjectFile::findDataSymbolByAddr(uint16_t addr, std::string &name)
 bool ObjectFile::findNearestCodeSymbolToAddr(uint16_t addr, std::string &name, uint16_t &symAddr)
 {
 	auto it = codeSymbolRLookup.lower_bound(addr);
+	if (it == codeSymbolRLookup.end())
+		return false;
+
 	if (it->first != addr && it != codeSymbolRLookup.begin())
 		it--;
 
@@ -602,17 +605,17 @@ void ObjectFile::dumpHeader(FILE *f)
 	if (f == nullptr)
 		return;
 
-	fprintf(f, "AOUT File Header\n");
-	fprintf(f, "----------------\n\n");
+	fprintf(f, "A.out File Header\n");
+	fprintf(f, "-----------------\n\n");
 
 	fprintf(f, "     Magic Number: " HEX_PREFIX "%X\n", file_header.a_magic);
 	fprintf(f, "Text Segment size: " HEX_PREFIX "%04X (%d) bytes\n", file_header.a_text, file_header.a_text);
 	fprintf(f, "Data Segment size: " HEX_PREFIX "%04X (%d) bytes\n", file_header.a_data, file_header.a_data);
 	fprintf(f, " BSS Segment size: " HEX_PREFIX "%04X (%d) bytes\n", file_header.a_bss, file_header.a_bss);
 	fprintf(f, "Symbol Table size: " HEX_PREFIX "%04X (%d) bytes\n", file_header.a_syms, file_header.a_syms);
-	fprintf(f, " Main Entry Point: " HEX_PREFIX "%04X\n", file_header.a_entry);
 	fprintf(f, " Text reloc count: " HEX_PREFIX "%04X (%d) entries\n", file_header.a_trsize, file_header.a_trsize);
-	fprintf(f, " Data reloc count: " HEX_PREFIX "%04X (%d) entries\n\n", file_header.a_drsize, file_header.a_drsize);
+	fprintf(f, " Data reloc count: " HEX_PREFIX "%04X (%d) entries\n", file_header.a_drsize, file_header.a_drsize);
+	fprintf(f, " Main Entry Point: " HEX_PREFIX "%04X\n\n", file_header.a_entry);
 }
 
 //
@@ -725,6 +728,9 @@ void ObjectFile::dumpTextRelocs(FILE *f)
 	if (f == nullptr)
 		return;
 
+	if (0 == textRelocs.size())
+		return;
+
 	fprintf(f, ".text segment relocations\n");
 	fprintf(f, "-------------------------\n\n");
 
@@ -748,6 +754,9 @@ void ObjectFile::dumpDataRelocs(FILE *f)
 	if (f == nullptr)
 		return;
 
+	if (0 == dataRelocs.size())
+		return;
+
 	fprintf(f, ".data segment relocations\n");
 	fprintf(f, "-------------------------\n\n");
 
@@ -766,6 +775,9 @@ void ObjectFile::dumpSymbols(FILE *f)
 {
 	assert(f != nullptr);
 	if (f == nullptr)
+		return;
+
+	if (0 == symbolTable.size())
 		return;
 
 	fprintf(f, "Symbols\n");

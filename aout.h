@@ -140,6 +140,10 @@ public:
 	int readFile(FILE *fptr);
 	int readFile(const std::string &name);
 
+	// stripping options
+	void stripSymbols()		{ symbolTable.clear(); stringTable.clear();  }
+	void stripRelocations() { textRelocs.clear(); dataRelocs.clear(); }
+
 	// code/data segments
 	uint32_t addText(uint8_t item);
 	uint32_t addData(uint8_t item);
@@ -149,9 +153,6 @@ public:
 	uint32_t getDataSize() const		{ return data_segment.size(); }
 	uint32_t getBssSize() const			{ return file_header.a_bss; }
 	uint32_t getEntryPoint() const		{ return file_header.a_entry; }
-
-	uint32_t getTextRelocSize() const { return file_header.a_trsize; }
-	uint32_t getDataRelocSize() const { return file_header.a_drsize; }
 
 	void setTextBase(uint32_t base) { textBase = base; }
 	void setDataBase(uint32_t base) { dataBase = base; }
@@ -182,6 +183,9 @@ public:
 	void addDataRelocation(RelocationEntry&);
 	bool relocate(const std::vector<ObjectFile*>&);
 	void concat(ObjectFile *rhs);
+
+	uint32_t getTextRelocSize() const { return file_header.a_trsize; }
+	uint32_t getDataRelocSize() const { return file_header.a_drsize; }
 
 	// debug output
 	void dumpHeader(FILE*);

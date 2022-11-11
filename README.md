@@ -56,3 +56,4 @@ The current set of tools are:
 * [ln](https://github.com/mseminatore/bintools/blob/master/ln) - a linker which combines a.out object files into an executable
 * [dumpbin](https://github.com/mseminatore/bintools/blob/master/dumpbin) - a utility to explore a.out object files and executables
 * [cisc](https://github.com/mseminatore/bintools/blob/master/cisc/) - an 8-bit CPU simulator and debug monitor
+* [strip](https://github.com/mseminatore/bintools/blob/master/strip/) - utility to strip symbols and relocation data

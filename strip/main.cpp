@@ -67,5 +67,7 @@ int main(int argc, char *argv[])
 	// write out the object file
 	obj.writeFile(g_szOutputFilename);
 
+	printf("\nStrip complete -> %s\n\n", g_szOutputFilename);
+
 	return 0;
 }

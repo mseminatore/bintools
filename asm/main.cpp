@@ -1020,11 +1020,11 @@ void AsmParser::file()
 			break;
 
 		case TV_CMPX:
-			memOperand(OP_CMPXI, OP_CMPX);
+			memOperand(OP_CMPXI, OP_CMPX, true);
 			break;
 
 		case TV_CMPY:
-			memOperand(OP_CMPYI, OP_CMPY);
+			memOperand(OP_CMPYI, OP_CMPY, true);
 			break;
 
 		case TV_AND:

@@ -1,4 +1,4 @@
-DIRS = asm ln cisc dumpbin
+DIRS = ln cisc dumpbin strip asm
 
 all:
 	set -e; for i in $(DIRS); do make -C $$i; done

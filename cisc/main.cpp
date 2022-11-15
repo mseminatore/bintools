@@ -74,6 +74,7 @@ public:
 	}
 
 	uint32_t checkOverflow(uint16_t val);
+	uint32_t checkOverflow(uint32_t val);
 	void inputByte();
 	void outputByte();
 
@@ -392,6 +393,15 @@ void Cisc::updateFlag(uint32_t result, uint8_t flag)
 }
 
 //
+uint32_t Cisc::checkOverflow(uint32_t val)
+{
+	auto check = val & 0x18000;
+	if (check == 0x10000 || check == 0x8000)
+		return 1;
+
+	return 0;
+}
+//
 uint32_t Cisc::checkOverflow(uint16_t val)
 {
 	auto check = val & 0x180;
@@ -455,6 +465,7 @@ uint8_t Cisc::exec()
 	uint8_t operand;
 	uint16_t addr;
 	uint16_t temp16;
+	uint32_t temp32;
 
 	switch (opcode)
 	{
@@ -593,9 +604,71 @@ uint8_t Cisc::exec()
 		updateFlag(temp16 & 0x80, FLAG_N);
 		updateFlag(checkOverflow(temp16), FLAG_V);
 
-		// Note: dwe iscard the result!
+		// Note: we discard the result!
 
 		log("CMP %d\t;'%c'\t" HEX_PREFIX "%X", operand, makePrintable(operand), operand);
+		break;
+
+	case OP_CMPX:
+		addr = fetchW();
+		temp32 = X - (ram[addr] + (ram[addr + 1] << 8));
+
+		updateFlag(temp32 & 0xFFFF0000, FLAG_C);
+		updateFlag(temp32 == 0, FLAG_Z);
+		updateFlag(temp32 & 0x8000, FLAG_N);
+		updateFlag(checkOverflow(temp32), FLAG_V);
+
+		// Note: we discard the result!
+
+		if (obj.findDataSymbolByAddr(addr, name))
+			log("CMPX [%s]", name.c_str());
+		else
+			log("CMPX [" HEX_PREFIX "%X]", addr);
+		break;
+
+	case OP_CMPXI:
+		temp16 = fetchW();
+		temp32 = X - temp16;
+
+		updateFlag(temp32 & 0xFFFF0000, FLAG_C);
+		updateFlag(temp32 == 0, FLAG_Z);
+		updateFlag(temp32 & 0x8000, FLAG_N);
+		updateFlag(checkOverflow(temp32), FLAG_V);
+
+		// Note: we discard the result!
+
+		log("CMPX %d\t;\t" HEX_PREFIX "%04X", temp16, temp16);
+		break;
+
+	case OP_CMPY:
+		addr = fetchW();
+		temp32 = Y - (ram[addr] + (ram[addr + 1] << 8));
+
+		updateFlag(temp32 & 0xFFFF0000, FLAG_C);
+		updateFlag(temp32 == 0, FLAG_Z);
+		updateFlag(temp32 & 0x8000, FLAG_N);
+		updateFlag(checkOverflow(temp32), FLAG_V);
+
+		// Note: we discard the result!
+
+		if (obj.findDataSymbolByAddr(addr, name))
+			log("CMPY [%s]", name.c_str());
+		else
+			log("CMPY [" HEX_PREFIX "%X]", addr);
+		break;
+
+	case OP_CMPYI:
+		temp16 = fetchW();
+		temp32 = Y - temp16;
+
+		updateFlag(temp32 & 0xFFFF0000, FLAG_C);
+		updateFlag(temp32 == 0, FLAG_Z);
+		updateFlag(temp32 & 0x8000, FLAG_N);
+		updateFlag(checkOverflow(temp32), FLAG_V);
+
+		// Note: we discard the result!
+
+		log("CMPY %d\t;\t" HEX_PREFIX "%04X", temp16, temp16);
 		break;
 
 	case OP_SUB:

@@ -8,8 +8,8 @@ with Object files. Specifically the
 PDP-11 and UNIX operating systems. The `a.out` format was used in Linux up 
 until the 1.2 kernel.
 
-> According to Wikipedia, the `a.out` file format names was an abbreviation of 
-> "assembler output" and was the defalt output filename from Ken Thompson's 
+> According to Wikipedia, the `a.out` file format name was an abbreviation of 
+> "assembler output" and was the default output filename from Ken Thompson's 
 > PDP-7 assembler.
 
 The bintools project is built regularly on Windows using Visual Studio as well

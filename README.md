@@ -35,14 +35,14 @@ like `ELF` or `PE`.
 
 In order to test the linker it was necessary to have a way to generate linkable
 object files. Certainly, it would have been possible to chose an existing 
-assembler that produced `a.out` object files. To keep the linker scope more 
-manageable it seemed important to avoid large and complex instruction sets. 
+assembler that produced `a.out` object files. However, to keep the linker scope 
+more manageable it seemed important to avoid large and complex instruction sets. 
 Which lead to the need to create a simple 8-bit CPU architecture and an 
 assembler for it.
 
-And finally, a way was to prove that the linker had successfully produced a 
-valid executable. For this a CPU emulator that could load, run and
-debug executables was created.
+And finally, a way was needed to prove that the linker successfully produced a 
+valid executable image. For this a CPU emulator was created that could load, 
+run and debug executables.
 
 ## The bintools tools
 

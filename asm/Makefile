@@ -17,7 +17,7 @@ OBJS	= \
 CFLAGS	= -I. -I.. -g -std=c++14
 LIBS = -lm -lc++
 
-all: $(TARGET) code
+all: $(TARGET)
 
 %.o: %.cpp $(DEPS)
 	$(CC) $(CFLAGS) -c -o $@ $<

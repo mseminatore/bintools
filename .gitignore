@@ -1,3 +1,11 @@
+# Build
+cisc/cisc
+dumpbin/dumpbin
+ln/ln
+strip/strip
+asm/asm
+a.asm
+
 # Prerequisites
 *.d
 
